@@ -1,17 +1,22 @@
 TODO:
+    ☐ experiment with half-cheetah
     ✔ check pytorch optimization issues @critical @done(18-06-01 18:07)
         ✔ is it converging? @done(18-06-01 18:07)
         ✔ normalization @started(18-05-31 17:34) @done(18-06-01 18:07) @lasted(1d33m1s)
         ✔ correct optimization algorithm and batch size @started(18-05-31 17:34) @done(18-06-01 18:07) @lasted(1d33m2s)
-            ☐ hyper-parameters @started(18-06-01 18:07)
-            ☐ checkout results and make more experiments
+            ✔ hyper-parameters @started(18-06-01 18:07) @done(18-06-04 12:58) @lasted(2d18h51m45s)
+            ✔ checkout results and make more experiments @done(18-06-04 12:58)
     ☐ check the model for torque limits/mass/....
     ☐ start with a simpler model: no feet @almost
         ☐ or perhaps the model with compliant feet @almost
     ✔ add PD controller: is it going to help or not? @done(18-05-30 13:44)
     ✔ use vx for cost @done(18-05-30 15:03)
         ☐ check if cost function is working or not
-    ☐ checkout cost function code from baseline paper: https://github.com/nagaban2/nn_dynamics/blob/master/reward_functions.py
+    ☐ gotta get rid of "done" from the env and develop my own
+        - just use timelimit for now?
+    ✔ checkout cost function code from baseline paper: https://github.com/nagaban2/nn_dynamics/blob/master/reward_functions.py @done(18-06-04 12:51)
+        - both this one and the homework code uses forward torso x vel + 0.05*action^2 @done(18-06-04 12:53)
+        - homework code also adds some hand-engineered costs (penalizes bad configs of legs) @done(18-06-04 12:54)
     ☐ drive simple motions: fix some joints and experiment with the rest (e.g. sinosuid)
     ☐ faster MPC with multiple rollout @speed
 

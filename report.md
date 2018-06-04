@@ -1,6 +1,8 @@
 
 ## Commit ad60aed6195493b8db4ecfa57aae27d73f3d15b9
 
+Reason: awful learning curves, need hyper-parameter tuning (choose between Adam and SGD, lr, batch_size, ...)
+
 ** note: there is no test set, so the comparisons might not be just, but since we collect new random data, it shouldn't be too bad
 ** but mpc and non-mpc comparison is a lot different
 
@@ -37,9 +39,9 @@ high-level results:
 
 ==================================================================================================================================
 
-## Commit ....
+## Commit 02f46fd4d7ca786cbeac29a4707e5f7c83e91237
 
-Idea: SGD was not using L2 weight decay penalty, so maybe that's the problem?
+Reason: SGD was not using L2 weight decay penalty, so maybe that's the problem?
 
 (+xx) Jun04_10-52-02 - SGD 512 mpc: awful performance! (parent: Jun01_18-04-12)
 (+++) Jun04_11-05-12 - Adam 1024 lr=0.0003 weight_decay=0.03: fantastic! straight down and far better than others (parent: Jun01_17-46-04)
@@ -54,3 +56,14 @@ high-level results:
     - best was weight_decay=0.0003 and not just mpc
 
 * thoughts: maybe we can play with lr and batch_size later on, but not now
+
+
+## Commit ...
+
+Reason: network size and layers
+
+starting from "Adam 1024 lr=0.0003 weight_decay=0.0003 not just mpc" and hidden_layers = [256]
+
+(2) Jun04_12-27-48 - hidden_layers = 1 * [512] :  (parent: Jun04_11-27-24)
+(1) Jun04_12-27-26 - hidden_layers = 2 * [256] :  (parent: Jun04_11-27-24) **best**
+(2) Jun04_12-34-08 - hidden_layers = 3 * [256] :  (parent: Jun04_11-27-24)

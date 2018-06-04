@@ -48,9 +48,10 @@ class MPCcontroller(Controller):
 			cost = 0
 			for _ in range(self.horizon):
 				actions.append(self.env.action_space.sample())
-				c_state = self.dyn_model(c_state, actions[-1])
+				new_state = self.dyn_model(c_state, actions[-1])
 				# print(self.cost_fn(c_state))
-				cost += self.cost_fn(c_state)
+				cost += self.cost_fn(c_state, actions[-1], new_state)
+				c_state = new_state
 			if best_cost is None or cost < best_cost:
 				best_plan = actions
 				best_cost = cost

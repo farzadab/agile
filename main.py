@@ -35,7 +35,7 @@ def collect_data(env, ctrl, nb_total_steps):
 def main():
     nb_total_steps = 1000
     nb_iterations = 40
-    hidden_layers = [256]
+    hidden_layers = [256, 256]
 
     env = gym.make('Crab2DCustomEnv-v0') 
     # env = gym.make('PDCrab2DCustomEnv-v0') 
@@ -58,7 +58,7 @@ def main():
     # ipdb.set_trace()
 
     dynamics = DynamicsModel(env, f_net, data.get_all())
-    cost_func = lambda x: -x[3].item()  # refers to vx
+    cost_func = lambda s,a,sn: -sn[3].item()  # refers to vx
 
     # data.calc_normalizations()
     # dynamics.fit(data)
