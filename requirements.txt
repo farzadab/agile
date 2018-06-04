@@ -1,0 +1,14 @@
+jinja2
+pybullet
+numpy
+#path.py
+
+# PyTorch
+# the requirements might be different for you, visit http://pytorch.org for more information
+http://download.pytorch.org/whl/cpu/torch-0.4.0-cp35-cp35m-linux_x86_64.whl
+torchvision
+
+tensorboard
+tensorboardX
+
+ipdb

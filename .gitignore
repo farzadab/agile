@@ -1,3 +1,17 @@
+.old/
+
+.bens_envs/
+cust_envs
+
+# pybullet
+0_VRDemoSettings.txt
+
+# tensorboard-pytorch
+runs/
+
+# Visual Studio Code
+.vscode/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
