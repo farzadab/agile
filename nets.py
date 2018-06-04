@@ -6,15 +6,15 @@ import datetime
 
 
 class NNModel(object):
-    def __init__(self, net, optimizer=None, criterion=None, batch_size=512):
+    def __init__(self, net, optimizer=None, criterion=None, batch_size=1024):
         # datetime.datetime.now().strftime('%Y/%m/%d-%X') + '_net.log'
         self.batch_size = batch_size
         self.writer = SummaryWriter()
         self.net = net.double()
         self.i_iteration = 0
         if optimizer is None:
-            self.optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9, weight_decay=0.1)
-            # self.optimizer = optim.Adam(net.parameters(), lr=0.0003, weight_decay=0.1)
+            # self.optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9, weight_decay=0.1)
+            self.optimizer = optim.Adam(net.parameters(), lr=0.0003, weight_decay=0.0003)
         if criterion is None:
             self.criterion = nn.MSELoss()
     

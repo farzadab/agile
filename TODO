@@ -13,6 +13,7 @@ TODO:
         ☐ check if cost function is working or not
     ☐ checkout cost function code from baseline paper: https://github.com/nagaban2/nn_dynamics/blob/master/reward_functions.py
     ☐ drive simple motions: fix some joints and experiment with the rest (e.g. sinosuid)
+    ☐ faster MPC with multiple rollout @speed
 
 Relevant:
     ☐ active learning?
