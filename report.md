@@ -58,7 +58,7 @@ high-level results:
 * thoughts: maybe we can play with lr and batch_size later on, but not now
 
 
-## Commit ...
+## Commit eacc95bf048360ca89b27a0435b0e336e3872390
 
 Reason: network size and layers
 
@@ -67,3 +67,16 @@ starting from "Adam 1024 lr=0.0003 weight_decay=0.0003 not just mpc" and hidden_
 (2) Jun04_12-27-48 - hidden_layers = 1 * [512] :  (parent: Jun04_11-27-24)
 (1) Jun04_12-27-26 - hidden_layers = 2 * [256] :  (parent: Jun04_11-27-24) **best**
 (2) Jun04_12-34-08 - hidden_layers = 3 * [256] :  (parent: Jun04_11-27-24)
+
+
+## Commit ....
+
+env: HalfCheetahNew-v0
+
+Reason: maybe HalfCheetah is easier?
+
+Jun04_14-00-01
+Jun04_15-00-20
+Jun04_16-12-35
+
+Learning is not bad, but finishes higher than the Crab environment, but still the resulting MPC does not produce good motions --- going back to the basics as Michiel suggested.

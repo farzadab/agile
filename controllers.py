@@ -57,7 +57,7 @@ class MPCcontroller(Controller):
 				best_cost = cost
 
 		self.planned_actions = reversed(best_plan[:self.num_mpc_steps])
-		print(best_cost)
+		# print(best_cost)
 	
 	def reset(self):
 		self.planned_actions = iter([])

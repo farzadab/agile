@@ -12,6 +12,7 @@ from controllers import RandomController, MPCcontroller
 from dynamics import DynamicsModel, Data
 from nets import MOENetwork, make_net
 import envs
+from costs import get_cost
 # from envs import PDCrabEnv
     
 
@@ -32,25 +33,38 @@ def collect_data(env, ctrl, nb_total_steps):
     return data
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="MPC with MoE neural net"
+    )
+    parser.add_argument(
+        # "--env", default="Crab2DCustomEnv-v0", help="Name of Gym environment to run"
+        "--env", default="HalfCheetahNew-v0", help="Name of Gym environment to run"
+        # PDCrab2DCustomEnv-v0
+    )
+    return parser.parse_args()
+
+
 def main():
     nb_total_steps = 1000
     nb_iterations = 40
     hidden_layers = [256, 256]
 
-    env = gym.make('Crab2DCustomEnv-v0') 
-    # env = gym.make('PDCrab2DCustomEnv-v0') 
-    # env = gym.make('NabiRosCustomEnv-v0')
+    args = parse_args()
+
+    env = gym.make(args.env) 
 
     ctrl = rand_ctrl = RandomController(env)
 
 
     # ipdb.set_trace()
+    print('#inputs : %d' % ctrl.nb_inputs())
+    print('#actions: %d' % ctrl.nb_actions())
 
     f_net = make_net(
         [ctrl.nb_inputs() + ctrl.nb_actions()] + hidden_layers + [ctrl.nb_inputs()],
         [nn.ReLU() for _ in hidden_layers],
     )
-    print(ctrl.nb_inputs(), ctrl.nb_actions())
 
     data = collect_data(env, ctrl, nb_total_steps*10)
 
@@ -58,7 +72,8 @@ def main():
     # ipdb.set_trace()
 
     dynamics = DynamicsModel(env, f_net, data.get_all())
-    cost_func = lambda s,a,sn: -sn[3].item()  # refers to vx
+    # cost_func = lambda s,a,sn: -sn[3].item()  # refers to vx
+    cost_func = get_cost(args.env)  # refers to vx
 
     # data.calc_normalizations()
     # dynamics.fit(data)
@@ -77,8 +92,8 @@ def main():
         else:
             ctrl = mpc_ctrl
     
-    env = gym.make('Crab2DCustomEnv-v0')
-    # env = gym.make('NabiRosCustomEnv-v0')
+    env = gym.make(args.env)
+
     ctrl = MPCcontroller(env, dynamics.predict, cost_func, num_simulated_paths=1000, num_mpc_steps=4)
 
     env.render(mode='human')
@@ -87,7 +102,7 @@ def main():
     for _ in range(100):
         # time.sleep(1. / 60.)
         obs, r, done, _ = env.step(ctrl.get_action(obs))
-        print('  ', cost_func(obs))
+        # print('  ', cost_func(obs))
         # if done:
         #     print("done:", r, obs)
             # time.sleep(1)

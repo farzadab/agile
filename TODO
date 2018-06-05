@@ -1,4 +1,16 @@
 TODO:
+    ☐ simple periodic PD controls
+    ☐ evaluate dynamics on longer horizons ... ?
+    ☐ send Michiel the specs of computer
+        GeForce GTX 285 (Last Price Change: 2011-06-23cpu $179.99 USD)
+        Intel Core i5 750 (found an article from September 06, 2010)
+    ✔ ask Zhaoming about the MuJoCo error @done(18-06-05 11:13): had no idea
+      >>> import gym, mujoco_py
+      >>> gym.make('HalfCheetahEnv-v2')
+      >>> gym.make('HalfCheetah-v2')
+      [1]    31083 illegal hardware instruction (core dumped)  python
+
+
     ☐ experiment with half-cheetah
     ✔ check pytorch optimization issues @critical @done(18-06-01 18:07)
         ✔ is it converging? @done(18-06-01 18:07)
