@@ -15,11 +15,23 @@ class Controller(object):
 
 	def get_action(self, state):
 		return NotImplementedError
+	
+	def get_name(self):
+		return 'NAN'
+
+class MultiStepController(Controller):
+	def get_multistep_actions(self, state, nb_steps):
+		return NotImplementedError
+	
 
 
-class RandomController(Controller):
+class RandomController(MultiStepController):
+	def get_name(self):
+		return 'RND'
 	def get_action(self, state):
 		return self.env.action_space.sample()
+	def get_multistep_actions(self, state, nb_steps):
+		return [self.get_action(None) for _ in range(nb_steps)], {}
 
 
 class MPCcontroller(Controller):
@@ -39,25 +51,29 @@ class MPCcontroller(Controller):
 		self.num_mpc_steps = min(num_mpc_steps, horizon)
 		self.planned_actions = iter([])
 	
-	def replan(self, state):
+	def get_name(self):
+		return 'MPC'
+	
+	def plan(self, state, horizon):
 		best_plan = None
 		best_cost = None
 		for _ in range(self.num_simulated_paths):
 			c_state = state
 			actions = []
+			predictions = []
 			cost = 0
-			for _ in range(self.horizon):
+			for _ in range(horizon):
 				actions.append(self.env.action_space.sample())
 				new_state = self.dyn_model(c_state, actions[-1])
 				# print(self.cost_fn(c_state))
 				cost += self.cost_fn(c_state, actions[-1], new_state)
 				c_state = new_state
+				predictions.append(new_state)
 			if best_cost is None or cost < best_cost:
 				best_plan = actions
 				best_cost = cost
-
-		self.planned_actions = reversed(best_plan[:self.num_mpc_steps])
-		# print(best_cost)
+				best_plan_predictions = predictions
+		return best_plan, best_cost, best_plan_predictions
 	
 	def reset(self):
 		self.planned_actions = iter([])
@@ -66,6 +82,11 @@ class MPCcontroller(Controller):
 		try:
 			return self.planned_actions.__next__()
 		except StopIteration:
-			self.replan(state)
+			best_plan, _, _ = self.plan(state, self.horizon)
+			self.planned_actions = reversed(best_plan[:self.num_mpc_steps])
 			return self.planned_actions.__next__()
+	
+	def get_multistep_actions(self, state, nb_steps):
+		plan, cost, predictions = self.plan(state, max(self.horizon, nb_steps))
+		return list(reversed(plan[:nb_steps])), {'cost': cost, 'predictions': list(reversed(predictions[:nb_steps]))}
 

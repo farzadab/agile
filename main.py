@@ -1,16 +1,19 @@
+'''MPC with MoE neural net'''
+import tensorboardX
 import torch.nn as nn
 import torch
-import argparse
 import time
 import gym
 import random
 import ipdb
 
-import cust_envs  # Ben's Envs: https://github.com/belinghy/research-experiments
+import cust_envs  # Ben's Envs: https://github.com/belinghy/pybullet-custom-envs
 
 from controllers import RandomController, MPCcontroller
 from dynamics import DynamicsModel, Data
 from nets import MOENetwork, make_net
+from argparser import parse_args
+from evaluation import evaluate_and_log_dynamics, EvaluationArgs
 import envs
 from costs import get_cost
 # from envs import PDCrabEnv
@@ -33,24 +36,14 @@ def collect_data(env, ctrl, nb_total_steps):
     return data
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="MPC with MoE neural net"
-    )
-    parser.add_argument(
-        # "--env", default="Crab2DCustomEnv-v0", help="Name of Gym environment to run"
-        "--env", default="HalfCheetahNew-v0", help="Name of Gym environment to run"
-        # PDCrab2DCustomEnv-v0
-    )
-    return parser.parse_args()
-
-
 def main():
     nb_total_steps = 1000
     nb_iterations = 40
     hidden_layers = [256, 256]
+    writer = tensorboardX.SummaryWriter()
 
-    args = parse_args()
+    args = parse_args(__doc__, ['env'])
+
 
     env = gym.make(args.env) 
 
@@ -61,9 +54,15 @@ def main():
     print('#inputs : %d' % ctrl.nb_inputs())
     print('#actions: %d' % ctrl.nb_actions())
 
-    f_net = make_net(
-        [ctrl.nb_inputs() + ctrl.nb_actions()] + hidden_layers + [ctrl.nb_inputs()],
-        [nn.ReLU() for _ in hidden_layers],
+    # f_net = make_net(
+    #     [ctrl.nb_inputs() + ctrl.nb_actions()] + hidden_layers + [ctrl.nb_inputs()],
+    #     [nn.ReLU() for _ in hidden_layers],
+    # )
+    f_net = MOENetwork(
+        nb_inputs=ctrl.nb_inputs() + ctrl.nb_actions(),
+        nb_experts=4,
+        gait_layers=[64],
+        expert_layers=[64, ctrl.nb_inputs()],
     )
 
     data = collect_data(env, ctrl, nb_total_steps*10)
@@ -71,7 +70,7 @@ def main():
 
     # ipdb.set_trace()
 
-    dynamics = DynamicsModel(env, f_net, data.get_all())
+    dynamics = DynamicsModel(env, f_net, data.get_all(), writer=writer)
     # cost_func = lambda s,a,sn: -sn[3].item()  # refers to vx
     cost_func = get_cost(args.env)  # refers to vx
 
@@ -79,6 +78,7 @@ def main():
     # dynamics.fit(data)
 
     mpc_ctrl = MPCcontroller(env, dynamics.predict, cost_func, num_simulated_paths=100, horizon=10, num_mpc_steps=10)
+    eval_args = EvaluationArgs(nb_burnin_steps=4, nb_episodes=10, horizons=[1, 2, 4, 8, 16, 32])
 
     for i in range(nb_iterations):
         print('Iteration', i)
@@ -86,6 +86,12 @@ def main():
         dynamics.fit(*new_data.get_all())
         data.extend(new_data)
         dynamics.fit(*data.sample(sample_size=4*nb_total_steps))
+        evaluate_and_log_dynamics(
+            dynamics.predict, env, rand_ctrl, writer=writer, i_step=i, args=eval_args
+        )
+        evaluate_and_log_dynamics(
+            dynamics.predict, env, mpc_ctrl, writer=writer, i_step=i, args=eval_args
+        )
         # dynamics.fit(*data.get_all())
         if random.random() > 0.5:
             ctrl = rand_ctrl
@@ -96,6 +102,8 @@ def main():
 
     ctrl = MPCcontroller(env, dynamics.predict, cost_func, num_simulated_paths=1000, num_mpc_steps=4)
 
+    # TODO
+
     env.render(mode='human')
     obs = env.reset()
 
@@ -103,11 +111,11 @@ def main():
         # time.sleep(1. / 60.)
         obs, r, done, _ = env.step(ctrl.get_action(obs))
         # print('  ', cost_func(obs))
-        # if done:
-        #     print("done:", r, obs)
-            # time.sleep(1)
-            # ctrl.reset()
-            # obs = env.reset()
+        if done:
+            print("done:", r, obs)
+            time.sleep(1)
+            ctrl.reset()
+            obs = env.reset()
     ipdb.set_trace()
     
 

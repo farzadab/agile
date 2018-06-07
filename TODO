@@ -1,6 +1,12 @@
 TODO:
+    ☐ get good motions
+        ☐ fix one, drive sinusoid from other
+        ☐ A -> B with cos interpolation
+        ☐ whole sinusoid: target = A_i cos(w t + phi_i)
+    ☐ fitted value iteration: http://www.cs.ubc.ca/~van/papers/2009-TOG-taskControl/index.html
+
     ☐ simple periodic PD controls
-    ☐ evaluate dynamics on longer horizons ... ?
+    ☐ evaluate dynamics on longer horizons ... ? @started(18-06-06 10:57)
     ☐ send Michiel the specs of computer
         GeForce GTX 285 (Last Price Change: 2011-06-23cpu $179.99 USD)
         Intel Core i5 750 (found an article from September 06, 2010)
@@ -36,7 +42,8 @@ Relevant:
     ☐ active learning?
 
 Papers:
-    ☐ DeepRL in a Handful of Trials using Probabilistic Dynamics https://arxiv.org/pdf/1805.12114.pdf @started(18-05-31 17:34)
+    ☐ Robust task-based control policies http://www.cs.ubc.ca/~van/papers/2009-TOG-taskControl/2009-TOG-taskControl.pdf
+    ✔ DeepRL in a Handful of Trials using Probabilistic Dynamics https://arxiv.org/pdf/1805.12114.pdf @started(18-05-31 17:34) @done(18-06-05 19:19) @lasted(5d1h45m1s)
     ☐ World Models https://arxiv.org/pdf/1803.10122.pdf
     ☐ Bayesian Optimization Using Domain Knowledge on the ATRIAS biped https://arxiv.org/pdf/1709.06047.pdf
     ☐ Back to Basics: Benchmarking Canonical Evolution Strategies for Playing Atari https://arxiv.org/abs/1802.08842

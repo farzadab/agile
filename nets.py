@@ -1,15 +1,14 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from tensorboardX import SummaryWriter
 import datetime
 
 
 class NNModel(object):
-    def __init__(self, net, optimizer=None, criterion=None, batch_size=1024):
+    def __init__(self, net, optimizer=None, criterion=None, batch_size=1024, writer=None):
         # datetime.datetime.now().strftime('%Y/%m/%d-%X') + '_net.log'
         self.batch_size = batch_size
-        self.writer = SummaryWriter()
+        self.writer = writer
         self.net = net.double()
         self.i_iteration = 0
         if optimizer is None:
@@ -32,7 +31,9 @@ class NNModel(object):
         self.i_iteration += 1
         
         # write summary to PyTorch-Tensorboard
-        self.writer.add_scalar('Train/Loss', loss, self.i_iteration)
+        if self.writer:
+            self.writer.add_scalar('Train/Loss', loss, self.i_iteration)
+            
         return loss
 
     def fit(self, X, y):
@@ -56,18 +57,26 @@ class MOENetwork(nn.Module):
             [nb_inputs] + gait_layers + [nb_experts],
             [nn.ReLU() for _ in gait_layers] + [nn.Softmax()]
         )
-        for _ in nb_experts:
-            self.experts.append(make_net(
+        for i in range(nb_experts):
+            expert = make_net(
                 [nb_inputs] + expert_layers,
-                [nn.ReLU() for _ in expert_layers] + [nn.Tanh()]
-            ))
+                [nn.ReLU() for _ in expert_layers]
+            )
+            self.experts.append(expert)
+            self.add_module('expert-%d' % i, expert)
     
-    def forward(self, x):
-        probs = self.gaiting_net.forward(x)
-        res = self.experts[0].forward(x) * probs[0]
-        for i in range(1, self.nb_experts):
-            res.add_(self.experts[i].forward(x) * probs[i])
-        return res
+    def forward(self, X):
+        batch = True
+        if len(X.shape) == 1:
+            batch = False
+            X = X.reshape(1,-1)
+        probs = self.gaiting_net(X).reshape((X.shape[0], 1, self.nb_experts))
+        expert_preds = torch.stack([e(X) for e in self.experts])
+        interpolation = torch.bmm(probs, expert_preds.t())
+        if batch:
+            return interpolation.reshape((X.shape[0],-1))
+        else:
+            return interpolation.reshape((-1,))
 
 
 def make_net(dims, activations):

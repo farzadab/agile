@@ -69,7 +69,7 @@ starting from "Adam 1024 lr=0.0003 weight_decay=0.0003 not just mpc" and hidden_
 (2) Jun04_12-34-08 - hidden_layers = 3 * [256] :  (parent: Jun04_11-27-24)
 
 
-## Commit ....
+## Commit 2ab9b1522afb5f0d0b2d551831be0465e083b293
 
 env: HalfCheetahNew-v0
 
@@ -80,3 +80,10 @@ Jun04_15-00-20
 Jun04_16-12-35
 
 Learning is not bad, but finishes higher than the Crab environment, but still the resulting MPC does not produce good motions --- going back to the basics as Michiel suggested.
+
+## Commit ....
+
+Added evaluations for longer time horizons
+Jun06_12-49-35 - NN [256, 256]: evaluations for MPC and horizon 1-16 seem to work well, but for 32 the result is garbage. Also for RandCtrl and 1-16, we still get resonable decrease (high variance), but still for 32 it's awful
+Jun06_16-42-40 - MOE [64] [64] with nb_total_steps=100: starts really high (not sure what the total_steps for the past expertiment was)
+Jun06_16-53-45 - same as above with nb_total_steps=1000

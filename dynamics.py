@@ -65,7 +65,7 @@ class Normalization(object):
 
 
 class DynamicsModel(NNModel):
-    def __init__(self, env, net, init_data):
+    def __init__(self, env, net, init_data, *args, **kwargs):
         '''
             params:
                 env: used to get some high-level info about environment (i.e. observation_space)
@@ -73,7 +73,7 @@ class DynamicsModel(NNModel):
                 init_data: used for normalization
         '''
         self.env = env
-        super().__init__(net)
+        super().__init__(net, *args, **kwargs)
         self.multipliers = th.ones(env.observation_space.shape[0], dtype=th.double)
         # self.multipliers *= 10
         # self.multipliers[3] = 20
@@ -102,4 +102,4 @@ class DynamicsModel(NNModel):
         return self.norm.unnormalize(
             super().predict(th.cat([state, action])) / self.multipliers + state,
             's'
-        )
+        ).detach().numpy()
