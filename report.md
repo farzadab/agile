@@ -81,15 +81,15 @@ Jun04_16-12-35
 
 Learning is not bad, but finishes higher than the Crab environment, but still the resulting MPC does not produce good motions --- going back to the basics as Michiel suggested.
 
-## 06-06-2018 Commit c5b4698ed7e1a0d1f294024bf5e73ad575d78920
+## 06/06/2018 - Commit c5b4698ed7e1a0d1f294024bf5e73ad575d78920
 
 Added evaluations for longer time horizons
 Jun06_12-49-35 - NN [256, 256]: evaluations for MPC and horizon 1-16 seem to work well, but for 32 the result is garbage. Also for RandCtrl and 1-16, we still get resonable decrease (high variance), but still for 32 it's awful
-Jun06_16-42-40 - MOE [64] [64] with nb_total_steps=100: starts really high (not sure what the total_steps for the past expertiment was)
-Jun06_16-53-45 - same as above with nb_total_steps=1000
+Jun06_16-42-40 - MOE [64] [64] with nb_total_steps=100: starts really high (not sure what the total_steps for the past expertiment was) goes down a lot (but still high) and goes up again! :((
+Jun06_16-53-45 - same as above with nb_total_steps=1000: still not too good :(
 
 
-## 06-06-2018 Commit ....
+## 06/06/2018 - Commit e84d6b659e7f047e7414a11f8317cec5bd17b479
 
 Experimenting with manual control of NABi robot (PD without feet). Can't really move it too much without falling. Mostly just leaning to left and right or going from a tall stance to a wide stance (can almost jump).
 Also changed the robot a little bit.

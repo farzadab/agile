@@ -69,14 +69,12 @@ class MOENetwork(nn.Module):
         batch = True
         if len(X.shape) == 1:
             batch = False
-            X = X.reshape(1,-1)
-        probs = self.gaiting_net(X).reshape((X.shape[0], 1, self.nb_experts))
+            X = X.unsqueeze(0)
+        probs = self.gaiting_net(X).unsqueeze(1)
         expert_preds = torch.stack([e(X) for e in self.experts])
-        interpolation = torch.bmm(probs, expert_preds.t())
-        if batch:
-            return interpolation.reshape((X.shape[0],-1))
-        else:
-            return interpolation.reshape((-1,))
+        interpolation = torch.bmm(probs, expert_preds.t()).squeeze(1)
+        if not batch:
+            return interpolation.squeeze(0)
 
 
 def make_net(dims, activations):
