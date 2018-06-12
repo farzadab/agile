@@ -43,7 +43,9 @@ class PointMass(gym.Env):
         u = np.clip(u, -self.max_torque, self.max_torque)
 
         # just a simple (dumb) explicit integration ... 
-        v = np.clip(v + u, -self.max_speed, self.max_speed)
+        v = v + u
+        if np.linalg.norm(v) > self.max_speed:
+            v = v / np.linalg.norm(v) * self.max_speed
 
         p = np.clip(p + v * self.dt, -self.max_position, self.max_position)
 
@@ -60,6 +62,8 @@ class PointMass(gym.Env):
     def reset(self):
         high = self.observation_space.high
         self.state = self.np_random.uniform(low=-high, high=high)
+        if np.linalg.norm(self.state[-2:]) > self.max_speed:
+            self.state[-2:] = self.state[-2:] / np.linalg.norm(self.state[-2:]) * self.max_speed
         # self.last_u = None
         return self._get_obs()
 

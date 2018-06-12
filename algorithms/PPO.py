@@ -33,12 +33,14 @@ class PPO(object):
                 act = self.actor.get_action(th.FloatTensor(obs), explore=True).detach()
                 acts.append(act.numpy())
                 obs_p, rew, done, _ = self.env.step(act)
+                print('\r%5.2f' % rew, end='')
                 mem.record(obs, act, rew, obs_p)
                 total_rew += rew
                 obs = obs_p
                 if done:
                     break
                 # FIXME: maybe run more episodes if they end too soon?
+            print('')
 
             mem.calc_cum_rews()
 
