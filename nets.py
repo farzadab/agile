@@ -42,6 +42,9 @@ class NNModel(object):
         for i in range(0, X.shape[0], self.batch_size):
             self.fit_batch(X[i:i+self.batch_size], y[i:i+self.batch_size])
         # TODO: return loss? have to adjust for the last batch
+    
+    def forward(self, X):
+        return self.net.forward(X)
 
     def predict(self, x):
         self.net.eval()

@@ -9,13 +9,14 @@ class PointMass(gym.Env):
         'video.frames_per_second' : 20
     }
 
-    def __init__(self):
+    def __init__(self, randomize_goal=True):
         self.max_speed = 2.
         self.max_torque = .5
         self.max_position = 20.
         self.treshold = 1.
         self.dt = .05
         self.viewer = None
+        self.randomize_goal = randomize_goal
 
         # self.obs_size = 4
         self.act_size = 2
@@ -64,6 +65,8 @@ class PointMass(gym.Env):
         self.state = self.np_random.uniform(low=-high, high=high)
         if np.linalg.norm(self.state[-2:]) > self.max_speed:
             self.state[-2:] = self.state[-2:] / np.linalg.norm(self.state[-2:]) * self.max_speed
+        if not self.randomize_goal:
+            self.state[2:4] = 0
         # self.last_u = None
         return self._get_obs()
 

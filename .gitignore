@@ -3,6 +3,11 @@
 .bens_envs/
 cust_envs
 
+# rllab
+rllab
+logs/
+rllab_scripts/
+
 # pybullet
 0_VRDemoSettings.txt
 

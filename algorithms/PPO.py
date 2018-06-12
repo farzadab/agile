@@ -4,10 +4,15 @@ import random
 import tensorboardX
 
 from algorithms.models import ActorNet
+from algorithms.plot import ScatterPlot
 from nets import make_net
+
 
 class PPO(object):
     def __init__(self, env, gamma, hidden_layers, eps=0.2, writer=None):
+        self.xlim = [-20,20]
+        self.ylim = [-20,20]
+        self.plot = ScatterPlot(xlim=[-20,20], ylim=[-20,20], value_range=[-10,10])
         self.eps = eps
         self.env = env
         self.gamma = gamma
@@ -46,8 +51,8 @@ class PPO(object):
 
             if self.writer:
                 self.writer.add_scalar('Train/AvgReward', float(total_rew) / i_step, i_episode)
-                self.writer.add_scalar('Train/Action/Avg', float(np.array(acts).mean()), i_episode)
-                self.writer.add_scalar('Train/Action/Std', float(np.array(acts).std()), i_episode)
+                self.writer.add_scalar('Extra/Action/Avg', float(np.array(acts).mean()), i_episode)
+                self.writer.add_scalar('Extra/Action/Std', float(np.array(acts).std()), i_episode)
 
             
             old_actor = self.actor.make_copy()
@@ -74,9 +79,19 @@ class PPO(object):
             if self.writer:
                 self.writer.add_scalar('Train/LossCritic', lc / nb_updates, i_episode)
                 self.writer.add_scalar('Train/LossActor', la / nb_updates, i_episode)
-                self.writer.add_scalar('Train/Value/Next', sum_v / nb_updates, i_episode)
-                self.writer.add_scalar('Train/Value/Current', sum_vhat / nb_updates, i_episode)
-                self.writer.add_scalar('Train/Action/Adv', sum_adv / nb_updates, i_episode)
+                self.writer.add_scalar('Extra/Value/Next', sum_v / nb_updates, i_episode)
+                self.writer.add_scalar('Extra/Value/Current', sum_vhat / nb_updates, i_episode)
+                self.writer.add_scalar('Extra/Action/Adv', sum_adv / nb_updates, i_episode)
+            
+            if self.plot:
+                x = np.linspace(self.xlim[0], self.xlim[1], 20)
+                y = np.linspace(self.ylim[0], self.ylim[1], 20)
+                points = np.array(np.meshgrid(x,y)).transpose().reshape((-1,2))
+                v = np.ones(points.shape[0])
+                for i, p in enumerate(points):
+                    v[i] = float(self.critic(th.FloatTensor(np.concatenate([p, [0,0,0,0]]))))
+                self.plot.update(points, v)
+
     
     def update_critic(self, batch):
         loss = 0
@@ -172,11 +187,11 @@ if __name__ == '__main__':
     from algorithms.senv import PointMass
     
     # env = gym.make('Pendulum-v0')
-    env = PointMass()
+    env = PointMass(randomize_goal=False)
 
     # TODO: normalization
     writer = tensorboardX.SummaryWriter()
-    ppo = PPO(env, gamma=0.95, hidden_layers=[4], writer=writer)
+    ppo = PPO(env, gamma=0.9, hidden_layers=[16], writer=writer)
     print(ppo.actor.net)
     print(ppo.critic)
     try:
