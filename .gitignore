@@ -8,6 +8,7 @@ cust_envs
 
 # tensorboard-pytorch
 runs/
+old_runs/
 
 # Visual Studio Code
 .vscode/

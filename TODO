@@ -1,4 +1,25 @@
-TODO:
+TODO NEW:
+    ☐ implement PPO
+        ✔ read the paper! @done(18-06-08 10:32)
+            ✔ ask Zhaoming if the gradient is always zero when min is clip @done(18-06-08 10:32): yes, he says
+        ✔ implement a basic high-level architecture @done(18-06-11 12:33)
+        ✔ take a look at Zhaoming's implementation @done(18-06-11 18:34)
+        ☐ take a look at RL-Lab's implementation
+        ✔ create simple environment @done(18-06-11 18:35): created PointMass env
+        ☐ debug code
+    
+    high-level:
+        ☐ re-implement DeepMimic
+            ✔ read the paper! @started(18-06-07 10:25) @done(18-06-07 14:00) @lasted(3h35m40s)
+                ☐ complete wiki
+
+Papers:
+    ✔ Deepmimic https://arxiv.org/pdf/1804.02717.pdf @done(18-06-07 15:18)
+    ☐ Proximal Policy Optimization (PPO) https://arxiv.org/pdf/1707.06347.pdf
+    ☐ backpropagation through the void https://arxiv.org/pdf/1711.00123
+    ☐ Generative advantage estimation (GAE) https://arxiv.org/pdf/1506.02438.pdf
+
+TODO OLD:
     ☐ get good motions
         ☐ fix one, drive sinusoid from other
         ☐ A -> B with cos interpolation
@@ -6,7 +27,7 @@ TODO:
     ☐ fitted value iteration: http://www.cs.ubc.ca/~van/papers/2009-TOG-taskControl/index.html
 
     ☐ simple periodic PD controls
-    ☐ evaluate dynamics on longer horizons ... ? @started(18-06-06 10:57)
+    ✔ evaluate dynamics on longer horizons ... ? @started(18-06-06 10:57) @done(18-06-08 10:32) @lasted(1d23h35m17s)
     ☐ send Michiel the specs of computer
         GeForce GTX 285 (Last Price Change: 2011-06-23cpu $179.99 USD)
         Intel Core i5 750 (found an article from September 06, 2010)
