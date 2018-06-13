@@ -4,7 +4,7 @@ import random
 import tensorboardX
 
 from algorithms.models import ActorNet
-from algorithms.plot import ScatterPlot
+from algorithms.plot import ScatterPlot, QuiverPlot, Plot
 from nets import make_net
 
 
@@ -12,7 +12,9 @@ class PPO(object):
     def __init__(self, env, gamma, hidden_layers, eps=0.2, writer=None):
         self.xlim = [-20,20]
         self.ylim = [-20,20]
-        self.plot = ScatterPlot(xlim=[-20,20], ylim=[-20,20], value_range=[-10,10])
+        plot = Plot(1,2)
+        self.splot = ScatterPlot(parent=plot, xlim=[-20,20], ylim=[-20,20], value_range=[-10,10])
+        self.qplot = QuiverPlot(parent=plot, xlim=[-20,20], ylim=[-20,20])
         self.eps = eps
         self.env = env
         self.gamma = gamma
@@ -35,7 +37,7 @@ class PPO(object):
             acts = []
             for i_step in range(nb_max_steps):
                 env.render(mode='human')
-                act = self.actor.get_action(th.FloatTensor(obs), explore=True).detach()
+                act = self.actor.get_action(th.FloatTensor(obs), explore=True).detach().numpy()
                 acts.append(act.numpy())
                 obs_p, rew, done, _ = self.env.step(act)
                 print('\r%5.2f' % rew, end='')
@@ -50,7 +52,7 @@ class PPO(object):
             mem.calc_cum_rews()
 
             if self.writer:
-                self.writer.add_scalar('Train/AvgReward', float(total_rew) / i_step, i_episode)
+                self.writer.add_scalar('Train/AvgReward', float(total_rew) / (i_step+1), i_episode)
                 self.writer.add_scalar('Extra/Action/Avg', float(np.array(acts).mean()), i_episode)
                 self.writer.add_scalar('Extra/Action/Std', float(np.array(acts).std()), i_episode)
 
@@ -83,14 +85,17 @@ class PPO(object):
                 self.writer.add_scalar('Extra/Value/Current', sum_vhat / nb_updates, i_episode)
                 self.writer.add_scalar('Extra/Action/Adv', sum_adv / nb_updates, i_episode)
             
-            if self.plot:
+            if self.splot and self.qplot:
                 x = np.linspace(self.xlim[0], self.xlim[1], 20)
                 y = np.linspace(self.ylim[0], self.ylim[1], 20)
                 points = np.array(np.meshgrid(x,y)).transpose().reshape((-1,2))
                 v = np.ones(points.shape[0])
+                d = np.ones((points.shape[0], 2))
                 for i, p in enumerate(points):
                     v[i] = float(self.critic(th.FloatTensor(np.concatenate([p, [0,0,0,0]]))))
-                self.plot.update(points, v)
+                    d[i] = self.actor.forward(th.FloatTensor(np.concatenate([p, [0,0,0,0]]))).detach()
+                self.splot.update(points, v)
+                self.qplot.update(points, d)
 
     
     def update_critic(self, batch):
@@ -103,6 +108,7 @@ class PPO(object):
             # loss += sample.td()
             # TODO: use TD(lambda) later
             # FIXME: hmm, I'm using an updated version of `critic` every time. is that alright?
+            # TODO: use MSEloss
             v = sample.cr #sample.r + self.gamma * self.critic(sample.ns)
             vhat = self.critic(sample.s)
             loss += (vhat - v).pow(2).sum()
@@ -190,8 +196,8 @@ if __name__ == '__main__':
     env = PointMass(randomize_goal=False)
 
     # TODO: normalization
-    writer = tensorboardX.SummaryWriter()
-    ppo = PPO(env, gamma=0.9, hidden_layers=[16], writer=writer)
+    writer = None#tensorboardX.SummaryWriter()
+    ppo = PPO(env, gamma=0.9, hidden_layers=[4], writer=writer)
     print(ppo.actor.net)
     print(ppo.critic)
     try:

@@ -1,6 +1,7 @@
 from gym.envs.classic_control import rendering
 from gym.utils import seeding
 import numpy as np
+import os.path as path
 import gym
 
 class PointMass(gym.Env):
@@ -13,7 +14,7 @@ class PointMass(gym.Env):
         self.max_speed = 2.
         self.max_torque = .5
         self.max_position = 20.
-        self.treshold = 1.
+        self.treshold = 2.
         self.dt = .05
         self.viewer = None
         self.randomize_goal = randomize_goal
@@ -41,17 +42,23 @@ class PointMass(gym.Env):
         g = self.state[2:4]
         v = self.state[4:6]
 
-        u = np.clip(u, -self.max_torque, self.max_torque)
+        u = np.array(u)  # PyTorch poblems: fixing it from both sides
+
+        if np.linalg.norm(u) > self.max_torque:
+            u = u / np.linalg.norm(u) * self.max_torque
+        
+        self.last_u = u
 
         # just a simple (dumb) explicit integration ... 
-        v = v + u
+        v = v + u * self.dt
         if np.linalg.norm(v) > self.max_speed:
             v = v / np.linalg.norm(v) * self.max_speed
 
         p = np.clip(p + v * self.dt, -self.max_position, self.max_position)
 
         distance = np.linalg.norm(g-p)
-        reward = np.dot(v, g-p) / distance - .001*(np.linalg.norm(u)**2)
+        # reward = np.dot(v, g-p) / distance - .001*(np.linalg.norm(u)**2)
+        reward = -1 * (distance / 40) ** 2
 
         done = distance < self.treshold
         if done:
@@ -67,6 +74,7 @@ class PointMass(gym.Env):
             self.state[-2:] = self.state[-2:] / np.linalg.norm(self.state[-2:]) * self.max_speed
         if not self.randomize_goal:
             self.state[2:4] = 0
+        self.last_u = np.array([0,0])
         # self.last_u = None
         return self._get_obs()
 
@@ -92,9 +100,19 @@ class PointMass(gym.Env):
             self.goal_transform = rendering.Transform()
             goal.add_attr(self.goal_transform)
             self.viewer.add_geom(goal)
+            fname = path.join(path.dirname(__file__), "assets/arrow.png")
+            self.img = rendering.Image(fname, 1., 1.)
+            self.img_trans = rendering.Transform()
+            self.img.add_attr(self.img_trans)
 
+        self.viewer.add_onetime(self.img)
         self.point_transform.set_translation(self.state[0], self.state[1])
         self.goal_transform.set_translation(self.state[2], self.state[3])
+        # if self.last_u:
+        self.img_trans.set_translation(self.state[0], self.state[1])
+        self.img_trans.set_rotation(np.arctan2(self.last_u[1], self.last_u[0]))
+        scale = np.linalg.norm(self.last_u) / self.max_torque * 2
+        self.img_trans.set_scale(scale, scale)
         # import time
         # time.sleep(self.dt)
 
