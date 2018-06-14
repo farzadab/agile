@@ -5,59 +5,46 @@ import tensorboardX
 
 from algorithms.models import ActorNet
 from nets import make_net
+from algorithms.normalization import Stats
 
 
 class PPO(object):
-    def __init__(self, env, gamma, hidden_layers, eps=0.2, writer=None):
+    def __init__(self, env, gamma, hidden_layers, eps=0.2, writer=None, render=False, running_norm=False):
         self.eps = eps
         self.env = env
         self.gamma = gamma
+        
+        self.render = render
         self.writer = writer
+        self.running_norm = running_norm
+        
         self.actor = ActorNet(env, hidden_layers, log_std_noise=-1)
         self.critic = make_net([env.observation_space.shape[0]] + hidden_layers + [1], [th.nn.ReLU() for _ in hidden_layers])
-        self.actor_optim = th.optim.SGD(self.actor.net.parameters(), lr=0.001, weight_decay=0.0003)
-        self.critic_optim = th.optim.SGD(self.critic.parameters(), lr=0.0001, weight_decay=0.0003)
-        # pass
+        self.actor_optim = th.optim.SGD(self.actor.net.parameters(), lr=0.01, weight_decay=0.0003)
+        self.critic_optim = th.optim.SGD(self.critic.parameters(), lr=0.001, weight_decay=0.0003)
+
+        self.norm_state = Stats(env.observation_space.shape[0])
+        self.norm_rew = Stats(1)
+
+
     def train(self, nb_episodes, nb_max_steps, nb_updates, batch_size):
+
         for i_episode in range(nb_episodes):
             print('Iteration %d' % (i_episode+1))
+            
             mem = ReplayMemory(gamma=self.gamma)
+
             # TODO: for GAE and TD(lambda) may need to assume that mem stores a single episode
             # and requires all the observations to be added sequentially and in order
+            self.sample_episode(nb_max_steps, mem, i_episode)
 
-            obs = self.env.reset()
-            # maybe use an env wrapper?
-            total_rew = 0
-            acts = []
-            for i_step in range(nb_max_steps):
-                env.render(mode='human')
-                act = self.actor.get_action(th.FloatTensor(obs), explore=True).detach().numpy()
-                acts.append(act)
-                obs_p, rew, done, _ = self.env.step(act)
-                print('\r%5.2f' % rew, end='')
-                mem.record(obs, act, rew, obs_p)
-                total_rew += rew
-                obs = obs_p
-                if done:
-                    break
-                # FIXME: maybe run more episodes if they end too soon?
-            print('')
-
-            mem.calc_cum_rews()
-
-            if self.writer:
-                self.writer.add_scalar('Train/AvgReward', float(total_rew) / (i_step+1), i_episode)
-                self.writer.add_scalar('Extra/Action/Avg', float(np.array(acts).mean()), i_episode)
-                self.writer.add_scalar('Extra/Action/Std', float(np.array(acts).std()), i_episode)
-
-            
             old_actor = self.actor.make_copy()
             lc = 0
             la = 0
             sum_v = 0
             sum_vhat = 0
             sum_adv = 0
-            for i_update in range(nb_updates):
+            for _ in range(nb_updates):
                 batch = mem.sample(batch_size)
 
                 # TODO: better logger
@@ -85,8 +72,73 @@ class PPO(object):
                     value_func=lambda s: float(self.critic(th.FloatTensor(s))),
                     i_episode=i_episode
                 )
-
     
+
+    def sample_normalization(self, nb_steps):
+        done = True  # force reset
+        
+        for _ in range(nb_steps):
+            if done:
+                state = self.env.reset()
+                self.norm_state.observe(state)
+
+            state_p, rew, done, _ = self.env.step(env.action_space.sample())
+
+            self.norm_state.observe(state_p)
+            self.norm_rew.observe([rew])
+
+            state = state_p
+            
+
+    def sample_episode(self, nb_max_steps, mem, i_episode):
+        # maybe use an env wrapper?
+        total_rew = 0
+        acts = []
+
+        done = True  # force reset
+        first = True
+
+        for i_step in range(nb_max_steps):
+            if done:
+                mem.calc_episode_rewards()
+                _state = self.env.reset()
+                nstate = self.norm_state.normalize(_state)
+                if not first:
+                    print('')
+                else:
+                    first = False
+                if self.running_norm:
+                    self.norm_state.observe(_state)
+
+            if self.render:
+                env.render(mode='human')
+
+            act = self.actor.get_action(th.FloatTensor(nstate), explore=True).detach().numpy()
+            acts.append(act)
+
+            _state_p, _rew, done, _ = self.env.step(act)
+            print('\r%5.2f' % _rew, end='')
+
+            nstate_p = self.norm_state.normalize(_state_p)
+            nrew = self.norm_rew.normalize([_rew])[0]
+            mem.record(nstate, act, nrew, nstate_p)
+
+            if self.running_norm:
+                self.norm_state.observe(_state_p)
+                self.norm_rew.observe([_rew])
+
+            total_rew += _rew
+            nstate = nstate_p
+        
+        mem.calc_episode_rewards()
+        print('')
+        
+        if self.writer:
+            self.writer.add_scalar('Train/AvgReward', float(total_rew) / (i_step+1), i_episode)
+            self.writer.add_scalar('Extra/Action/Avg', float(np.array(acts).mean()), i_episode)
+            self.writer.add_scalar('Extra/Action/Std', float(np.array(acts).std()), i_episode)
+    
+
     def update_critic(self, batch):
         loss = 0
         self.critic.zero_grad()  # better way?
@@ -138,6 +190,7 @@ class ReplayMemory(object):
     def __init__(self, gamma):
         self.data = []
         self.gamma = gamma
+        self.episode_start_index = 0
 
     def size(self):
         return len(self.data)
@@ -145,11 +198,20 @@ class ReplayMemory(object):
     def record(self, s, a, r, ns):
         self.data.append(ObservedTuple(s, a, r, ns))
     
-    def calc_cum_rews(self):
+    def calc_episode_rewards(self):
         rew = 0
-        for t in reversed(self.data):
+        
+        for t in reversed(self.data[self.episode_start_index:]):
             rew = t.r + self.gamma * rew
             t.set_cum_rew(rew)
+
+        self.episode_start_index = len(self.data)
+        # if len(self.data):
+        #     print('\nminmax')
+        #     print(np.min([t.cr for t in self.data]))
+        #     print(np.max([t.cr for t in self.data]))
+            # print(np.min([t.s.numpy() for t in self.data], 0))
+            # print(np.max([t.s.numpy() for t in self.data], 0))
 
     # def extend(self, other):
     #     for k in self.key_names:
@@ -183,13 +245,16 @@ if __name__ == '__main__':
     
     writer = tensorboardX.SummaryWriter()
     # env = gym.make('Pendulum-v0')
-    env = PointMass(randomize_goal=False, writer=writer)
+    env = PointMass(randomize_goal=False, writer=writer, max_steps=100)
 
-    # TODO: normalization
-    ppo = PPO(env, gamma=0.9, hidden_layers=[4], writer=writer)
+    ppo = PPO(env, gamma=0.9, hidden_layers=[4], writer=writer, running_norm=True, render=False)
+    ppo.sample_normalization(1000)
+    print(ppo.norm_rew.mean, ppo.norm_rew.std)
+    print(ppo.norm_state.mean, ppo.norm_state.std)
     print(ppo.actor.net)
     print(ppo.critic)
     try:
-        ppo.train(nb_episodes=500, nb_max_steps=400, nb_updates=10, batch_size=256)
+        # TODO: fix the name ov nb_episodes, since it's not the nb_episodes anymore
+        ppo.train(nb_episodes=400, nb_max_steps=1000, nb_updates=20, batch_size=512)
     finally:
         env.close()

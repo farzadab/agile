@@ -1,10 +1,12 @@
 TODO PPO:
     alg improvements:
-        ☐ normalization (states/reward)
-            ☐ running average
-                ☐ try naive normalization as well and run an experiment
+        ✔ normalization (states/reward) @started(18-06-14 11:57) @done(18-06-14 14:49) @lasted(2h52m39s)
+            ✔ running average @done(18-06-14 14:49)
+                ✔ try naive normalization as well and run an experiment @started(18-06-14 11:57) @done(18-06-14 14:49) @lasted(2h52m41s)
                 normalization of reward should help with TD estimates
             ☐ not sure if I need it for actions or not (Glen says no)
+        ✔ more episodes per iteration @started(18-06-14 11:57) @done(18-06-14 14:49) @lasted(2h52m53s)
+            ✔ fix ReplayMemory @critical @done(18-06-14 14:49)
         ☐ use TD estimates
             ☐ TD(1)
             ☐ TD(lambda)
@@ -17,11 +19,14 @@ TODO PPO:
         ☐ try negative distance squared again (without the bonus at the end)
     
     tech debt:
-        ☐ refactor the visualization part of the code @started(18-06-13 19:40)
+        ✔ refactor the visualization part of the code @started(18-06-13 19:40) @done(18-06-14 14:49) @lasted(19h9m35s)
         ☐ better logging system
 
     doc:
         ☐ write up results in Github or wiki (which one?)
+    
+    parallelism:
+        ☐ check to see if you can improve the policy update in Zhaoming's code (read https://arxiv.org/abs/1707.02286)
 
     ✔ implement PPO @done(18-06-13 19:40)
         ✔ read the paper! @done(18-06-08 10:32)

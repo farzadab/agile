@@ -1,5 +1,6 @@
-import matplotlib.pyplot as plt
 import matplotlib
+# matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 import numpy as np
 import time
@@ -13,7 +14,7 @@ class Plot(object):
         if parent is None:
             self.parent = self
             # TODO: make up a name
-            self.fig, self.subplots = plt.subplots(nrows, ncols, figsize=(4*ncols, 4*nrows))
+            self.fig, self.subplots = plt.subplots(nrows, ncols, figsize=(4.5*ncols, 4.5*nrows))
             self.subplots = np.array(self.subplots).reshape(-1)[::-1].tolist()
         else:
             self.parent = parent

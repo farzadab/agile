@@ -13,13 +13,14 @@ class PointMass(gym.Env):
         'video.frames_per_second' : 20
     }
 
-    def __init__(self, randomize_goal=True, writer=None):
+    def __init__(self, max_steps=100, randomize_goal=True, writer=None):
         self.max_speed = 2.
         self.max_torque = 2.
         self.max_position = 20.
+        self.max_steps = max_steps
         self.treshold = 2.
         self.goal_reward = 100
-        self.dt = .05
+        self.dt = .1
         self.mass = .2
         self.randomize_goal = randomize_goal
 
@@ -46,6 +47,8 @@ class PointMass(gym.Env):
     
 
     def step(self, u):
+        self.i_step += 1
+
         # state: (px, py, gx, gy, vx, vy)
         p = self.state[0:2]
         g = self.state[2:4]
@@ -71,9 +74,11 @@ class PointMass(gym.Env):
         reward += np.dot(v, g-p) / distance - .001*(np.linalg.norm(u)**2)
         # reward += -1 * (distance / 40) ** 2
 
-        done = distance < self.treshold
-        if done:
+        reached = distance < self.treshold
+        if reached:
             reward += self.goal_reward
+        
+        done = reached or (self.i_step >= self.max_steps)
 
         self.state = np.concatenate([p, g, v])
         return self._get_obs(), float(reward), done, {}
@@ -86,6 +91,7 @@ class PointMass(gym.Env):
         if not self.randomize_goal:
             self.state[2:4] = 0
         self.last_u = np.array([0,0])
+        self.i_step = 0
         # self.last_u = None
         return self._get_obs()
 
