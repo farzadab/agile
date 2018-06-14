@@ -1,12 +1,36 @@
-TODO NEW:
-    ☐ implement PPO
+TODO PPO:
+    alg improvements:
+        ☐ normalization (states/reward)
+            ☐ running average
+                ☐ try naive normalization as well and run an experiment
+                normalization of reward should help with TD estimates
+            ☐ not sure if I need it for actions or not (Glen says no)
+        ☐ use TD estimates
+            ☐ TD(1)
+            ☐ TD(lambda)
+    
+    experiments:
+        ☐ add images to tensorboard
+        ☐ better setup for running experiments
+        ☐ longer control step: do the same action 5-10 times
+        ☐ v^2 reward: use square of the inwards velocity
+        ☐ try negative distance squared again (without the bonus at the end)
+    
+    tech debt:
+        ☐ refactor the visualization part of the code @started(18-06-13 19:40)
+        ☐ better logging system
+
+    doc:
+        ☐ write up results in Github or wiki (which one?)
+
+    ✔ implement PPO @done(18-06-13 19:40)
         ✔ read the paper! @done(18-06-08 10:32)
             ✔ ask Zhaoming if the gradient is always zero when min is clip @done(18-06-08 10:32): yes, he says
         ✔ implement a basic high-level architecture @done(18-06-11 12:33)
         ✔ take a look at Zhaoming's implementation @done(18-06-11 18:34)
         ☐ take a look at RL-Lab's implementation
         ✔ create simple environment @done(18-06-11 18:35): created PointMass env
-        ☐ debug code
+        ✔ debug code @done(18-06-13 19:27)
     
     high-level:
         ☐ re-implement DeepMimic

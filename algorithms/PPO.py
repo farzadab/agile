@@ -4,22 +4,16 @@ import random
 import tensorboardX
 
 from algorithms.models import ActorNet
-from algorithms.plot import ScatterPlot, QuiverPlot, Plot
 from nets import make_net
 
 
 class PPO(object):
     def __init__(self, env, gamma, hidden_layers, eps=0.2, writer=None):
-        self.xlim = [-20,20]
-        self.ylim = [-20,20]
-        plot = Plot(1,2)
-        self.splot = ScatterPlot(parent=plot, xlim=[-20,20], ylim=[-20,20], value_range=[-10,10])
-        self.qplot = QuiverPlot(parent=plot, xlim=[-20,20], ylim=[-20,20])
         self.eps = eps
         self.env = env
         self.gamma = gamma
         self.writer = writer
-        self.actor = ActorNet(env, hidden_layers)
+        self.actor = ActorNet(env, hidden_layers, log_std_noise=-1)
         self.critic = make_net([env.observation_space.shape[0]] + hidden_layers + [1], [th.nn.ReLU() for _ in hidden_layers])
         self.actor_optim = th.optim.SGD(self.actor.net.parameters(), lr=0.001, weight_decay=0.0003)
         self.critic_optim = th.optim.SGD(self.critic.parameters(), lr=0.0001, weight_decay=0.0003)
@@ -38,7 +32,7 @@ class PPO(object):
             for i_step in range(nb_max_steps):
                 env.render(mode='human')
                 act = self.actor.get_action(th.FloatTensor(obs), explore=True).detach().numpy()
-                acts.append(act.numpy())
+                acts.append(act)
                 obs_p, rew, done, _ = self.env.step(act)
                 print('\r%5.2f' % rew, end='')
                 mem.record(obs, act, rew, obs_p)
@@ -85,17 +79,12 @@ class PPO(object):
                 self.writer.add_scalar('Extra/Value/Current', sum_vhat / nb_updates, i_episode)
                 self.writer.add_scalar('Extra/Action/Adv', sum_adv / nb_updates, i_episode)
             
-            if self.splot and self.qplot:
-                x = np.linspace(self.xlim[0], self.xlim[1], 20)
-                y = np.linspace(self.ylim[0], self.ylim[1], 20)
-                points = np.array(np.meshgrid(x,y)).transpose().reshape((-1,2))
-                v = np.ones(points.shape[0])
-                d = np.ones((points.shape[0], 2))
-                for i, p in enumerate(points):
-                    v[i] = float(self.critic(th.FloatTensor(np.concatenate([p, [0,0,0,0]]))))
-                    d[i] = self.actor.forward(th.FloatTensor(np.concatenate([p, [0,0,0,0]]))).detach()
-                self.splot.update(points, v)
-                self.qplot.update(points, d)
+            if callable(getattr(self.env, 'visualize_solution')):
+                self.env.visualize_solution(
+                    policy=lambda s: self.actor.forward(th.FloatTensor(s)).detach(),
+                    value_func=lambda s: float(self.critic(th.FloatTensor(s))),
+                    i_episode=i_episode
+                )
 
     
     def update_critic(self, batch):
@@ -192,11 +181,11 @@ if __name__ == '__main__':
     import gym
     from algorithms.senv import PointMass
     
+    writer = tensorboardX.SummaryWriter()
     # env = gym.make('Pendulum-v0')
-    env = PointMass(randomize_goal=False)
+    env = PointMass(randomize_goal=False, writer=writer)
 
     # TODO: normalization
-    writer = None#tensorboardX.SummaryWriter()
     ppo = PPO(env, gamma=0.9, hidden_layers=[4], writer=writer)
     print(ppo.actor.net)
     print(ppo.critic)

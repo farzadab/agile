@@ -5,7 +5,7 @@
 `✖` indicates bad result (or failure) in an experiment
 `✔` indicates good result (or success) in an experiment
 `???` question or wondering: can be the basis of the next experiments
-`Res` indicates a response (or answer) to a question
+`Res` indicates a response (or answer) to a question, most likely an answer found later down the line
 
 # Report
 
@@ -41,3 +41,5 @@ an experiment actually exploited the uncorrect torque clipping!
 ??? is the sign of the loss used in updating actor correct? Res: yes
 ✔ 🔍🔍🔍 : flipped the sign of loss and it was obviously increasing the cost
 
+??? the current sampling and update scheme is not so good, may need better memory structure or ...
+??? need more exploration?
