@@ -9,7 +9,7 @@ from algorithms.normalization import Stats
 
 
 class PPO(object):
-    def __init__(self, env, gamma, hidden_layers, eps=0.2, writer=None, render=False, running_norm=False):
+    def __init__(self, env, gamma, actor_layers, critic_layers, eps=0.2, writer=None, render=False, running_norm=False):
         self.eps = eps
         self.env = env
         self.gamma = gamma
@@ -18,8 +18,8 @@ class PPO(object):
         self.writer = writer
         self.running_norm = running_norm
         
-        self.actor = ActorNet(env, hidden_layers, log_std_noise=-1)
-        self.critic = make_net([env.observation_space.shape[0]] + hidden_layers + [1], [th.nn.ReLU() for _ in hidden_layers])
+        self.actor = ActorNet(env, actor_layers, log_std_noise=-1)
+        self.critic = make_net([env.observation_space.shape[0]] + critic_layers + [1], [th.nn.ReLU() for _ in critic_layers])
         self.actor_optim = th.optim.SGD(self.actor.net.parameters(), lr=0.01, weight_decay=0.0003)
         self.critic_optim = th.optim.SGD(self.critic.parameters(), lr=0.001, weight_decay=0.0003)
 
@@ -247,7 +247,12 @@ if __name__ == '__main__':
     # env = gym.make('Pendulum-v0')
     env = PointMass(randomize_goal=False, writer=writer, max_steps=100)
 
-    ppo = PPO(env, gamma=0.9, hidden_layers=[4], writer=writer, running_norm=True, render=False)
+    # ppo = PPO(env, gamma=0.9, hidden_layers=[4], writer=writer, running_norm=True, render=False)
+    ppo = PPO(
+        env, gamma=0.9, running_norm=True,
+        critic_layers=[8], actor_layers=[],
+        render=False, writer=writer,
+    )
     ppo.sample_normalization(1000)
     print(ppo.norm_rew.mean, ppo.norm_rew.std)
     print(ppo.norm_state.mean, ppo.norm_state.std)

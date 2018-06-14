@@ -50,7 +50,7 @@ an experiment actually exploited the uncorrect torque clipping!
 
 +++ refactored code + save plots in tensorboard
 
-## 14/06/2018 - Commit ...
+## 14/06/2018 - Commit 635fa869827f209612d0273074e3a944cd3c9f73
 
 +++ added normalization
 ??? the learning is really slow! increasing lr (need annealing)
@@ -59,4 +59,21 @@ an experiment actually exploited the uncorrect torque clipping!
 Jun14_13-30-38 & Jun14_14-55-43 & Jun14_15-11-40 - running_average=False: 100 steps to avg reward of 2.5 (best is around 3), policy was almost perfect at 50 steps (noise maybe too high?)
 Jun14_14-40-29 & Jun14_14-55-08 & Jun14_15-14-19 - running_average=True: seems to work slightly better (or just lucky init?)
 
-Res: effect of running average: better learning at the start, but plateaus sooner. A lot better for the critic loss
+??? why does the value function look so wrong??
+
+Res: effect of running average: better learning at the start, but plateaus sooner (maybe nothing left to learn?). A lot better for the critic loss
+??? maybe need to stop doing running average after a while?
+
+??? possible bug: may need to apply the normalization after the episodes are done since the normalization changes within a single update
+??? better visualization of policy: average over multiple velocity directions?
+
+--> running_norm=True
+
+## 14/06/2018 - Commit ...
+
++++ added separate architecture configs for actor and critic networks
+
+--> running_norm=True, actor_layers=[], critic_layers=[4] (same as before)
+Jun14_16-08-58:
+--> critic_layers=[8]
+Jun14_15-50-36: learned good enough policy after 35 iters, (almost) perfect after 60

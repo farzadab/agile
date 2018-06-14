@@ -8,6 +8,9 @@ from algorithms.plot import ScatterPlot, QuiverPlot, Plot
 
 
 class PointMass(gym.Env):
+    '''
+    Just a simple 2D PointMass with a jet, trying to go towards a goal location
+    '''
     metadata = {
         'render.modes' : ['human', 'rgb_array'],
         'video.frames_per_second' : 20
