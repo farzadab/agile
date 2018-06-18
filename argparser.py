@@ -14,8 +14,7 @@ _DEFAULT_ARGS = {
         'default': 'human',
         'help': 'The render mode for the environment. "human" will open a GUI',
     },
-    'description': {
-        'required': True,
+    'desc': {
         'help': 'Description of what the experiment is trying to accomplish',
     },
     'timesteps': {

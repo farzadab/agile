@@ -42,3 +42,9 @@ class ActorNet(object):
         c = copy.deepcopy(self)
         # TODO fix optimizer if needed
         return c
+    
+    def save_model(self, path):
+        th.save(self.net, path)
+    
+    def load_model(self, path):
+        self.net.load_state_dict(th.load(path))

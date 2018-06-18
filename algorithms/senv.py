@@ -16,7 +16,7 @@ class PointMass(gym.Env):
         'video.frames_per_second' : 20
     }
 
-    def __init__(self, max_steps=100, randomize_goal=True, writer=None):
+    def __init__(self, max_steps=100, randomize_goal=True, writer=None, reset=True):
         self.max_speed = 2.
         self.max_torque = 2.
         self.max_position = 20.
@@ -42,7 +42,8 @@ class PointMass(gym.Env):
         self.observation_space = gym.spaces.Box(low=-high_position, high=high_position)
 
         self.seed()
-        self.reset()
+        if reset:
+            self.reset()
     
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -74,12 +75,12 @@ class PointMass(gym.Env):
         p = np.clip(p + v * self.dt, -self.max_position, self.max_position)
 
         distance = np.linalg.norm(g-p)
-        reward += np.dot(v, g-p) / distance - .001*(np.linalg.norm(u)**2)
-        # reward += -1 * (distance / 40) ** 2
+        # reward += np.dot(v, g-p) / distance - .001*(np.linalg.norm(u)**2)
+        reward += -1 * (distance / self.max_position) ** 2
 
         reached = distance < self.treshold
-        if reached:
-            reward += self.goal_reward
+        # if reached:
+        #     reward += self.goal_reward
         
         done = reached or (self.i_step >= self.max_steps)
 
@@ -138,7 +139,7 @@ class PointMass(gym.Env):
 
         return self.viewer.render(return_rgb_array = mode=='rgb_array')
 
-    def visualize_solution(self, policy=None, value_func=None, i_episode=None):
+    def visualize_solution(self, policy=None, value_func=None, i_iter=None):
         '''
             @brief Visualizes policy and value functions
             the policy/value are visualized only for states where goal = v = 0
@@ -174,9 +175,33 @@ class PointMass(gym.Env):
         self.splot.update(points, v)
         self.qplot.update(points, d)
         
-        if i_episode is not None and self.writer is not None:
-            self.writer.add_image('Vis/Nets', self.plot.get_image(), i_episode)
+        if i_iter is not None and self.writer is not None:
+            self.writer.add_image('Vis/Nets', self.plot.get_image(), i_iter)
 
     def close(self):
         if self.viewer:
             self.viewer.close()
+
+
+class CircularPointMass(PointMass):
+    def __init__(self, radius=None, angular_speed=0.02, *args, **kwargs):
+        super().__init__(reset=False, *args, **kwargs)
+        self.angular_speed = angular_speed
+        self.radius = radius if radius is not None else self.max_position / 2
+        self.reset()
+
+    def reset(self):
+        super().reset()
+        self.phase = 0
+        if self.randomize_goal:
+            self.phase = self.np_random.uniform(0, 2*np.pi)
+        self._set_goal_pos()
+        return self._get_obs()
+        
+    def _set_goal_pos(self):
+        self.state[2:4] = np.array([np.cos(self.phase), np.sin(self.phase)]) * self.radius
+
+    def step(self, u):
+        self.phase += self.angular_speed
+        self._set_goal_pos()
+        return super().step(u)

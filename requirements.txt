@@ -2,6 +2,8 @@ bokeh  # plotting
 jinja2
 pybullet
 numpy
+pygit2
+termcolor
 #path.py
 
 # PyTorch

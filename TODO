@@ -15,12 +15,13 @@ TODO PPO:
     experiments:
         ✔ add images to tensorboard @done(18-06-18 11:50)
         ✔ better setup for running experiments @started(18-06-18 12:08) @done(18-06-18 13:23) @lasted(1h15m24s)
-            ☐ validation criteria
+            ☐ validation criteria: reached as extra dict?
+            ☐ register environments
         ☐ longer control step: do the same action 5-10 times
         ☐ v^2 reward: use square of the inwards velocity
         ☐ try negative distance squared again (without the bonus at the end)
-        environments:
-            ☐ moving target: circle
+        new env:
+            ✔ moving target: circle @done(18-06-18 13:52)
                 ☐ experiment with the effect of using phase
     
     technical:

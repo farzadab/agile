@@ -43,7 +43,7 @@ class PPO(object):
     def train(self, nb_iters, nb_max_steps, nb_updates, batch_size):
 
         for i_iter in range(nb_iters):
-            print('Iteration %d' % (i_iter+1))
+            print('\rIteration: %d' % (i_iter+1), end='')
             
             mem = ReplayMemory(gamma=self.gamma)
 
