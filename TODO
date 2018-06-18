@@ -13,15 +13,21 @@ TODO PPO:
             ☐ TD(lambda)
     
     experiments:
-        ☐ add images to tensorboard
-        ☐ better setup for running experiments
+        ✔ add images to tensorboard @done(18-06-18 11:50)
+        ✔ better setup for running experiments @started(18-06-18 12:08) @done(18-06-18 13:23) @lasted(1h15m24s)
+            ☐ validation criteria
         ☐ longer control step: do the same action 5-10 times
         ☐ v^2 reward: use square of the inwards velocity
         ☐ try negative distance squared again (without the bonus at the end)
+        environments:
+            ☐ moving target: circle
+                ☐ experiment with the effect of using phase
     
-    tech debt:
+    technical:
         ✔ refactor the visualization part of the code @started(18-06-13 19:40) @done(18-06-14 14:49) @lasted(19h9m35s)
         ☐ better logging system
+        ☐ store policy/value function
+        ☐ state object?
 
     doc:
         ☐ write up results in Github or wiki (which one?)

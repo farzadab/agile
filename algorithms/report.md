@@ -6,6 +6,7 @@
 `✔` indicates good result (or success) in an experiment
 `???` question or wondering: can be the basis of the next experiments
 `Res` indicates a response (or answer) to a question, most likely an answer found later down the line
+`⚫⚫⚫` misc
 
 # Report
 
@@ -69,11 +70,26 @@ Res: effect of running average: better learning at the start, but plateaus soone
 
 --> running_norm=True
 
-## 14/06/2018 - Commit ...
+## 14/06/2018 - Commit 11a95535f8c2aa8874fe25175f2dec5801c8e433
 
 +++ added separate architecture configs for actor and critic networks
 
 --> running_norm=True, actor_layers=[], critic_layers=[4] (same as before)
-Jun14_16-08-58:
+Jun14_16-08-58: bad init, but still (almost) perfect policy after 50
 --> critic_layers=[8]
 Jun14_15-50-36: learned good enough policy after 35 iters, (almost) perfect after 60
+⚫⚫⚫ took a picture of this, but the other one (Jun14_16-08-58) was actually better! :)
+
+--> distance^2 cost instead of velocity reward
+Jun14_16-46-38: 
+Jun14_17-10-41: same as above but scaled reward (mostly for visualzation). it had a really lucky initialization :)
+Jun14_17-12-09: struggling to learn :(
+??? TD might help a lot here
+
+
+--> randomize_goal = True
+Jun15_15-27-31: randomize_goal and velocity reward work perfectly! it took around 150 to get max reward
+
++++ added save/load functionality
+
+Jun15_16-45-08: randomize_goal and distance squared works too. Not sure how well, need a validation criteria
