@@ -7,6 +7,7 @@ import gym
 
 # load my environments
 import cust_envs, envs
+from algorithms.senv import get_env
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -17,12 +18,18 @@ def parse_args():
     )
     return parser.parse_args()
 
-if __name__ == '__main__':
-    
+
+def main():
     args = parse_args()
     print('Testing environment %s' % args.env)
-    env = gym.make(args.env)
-    env.render(mode='human')
+    env = get_env(args.env)
+    print(env)
+    
+    try:
+        env.render(mode='human')
+    except:
+        env.reset()
+        env.render(mode='human')
 
     actionSpace = env.action_space
     # env.setRandomSeed(1234)
@@ -33,13 +40,13 @@ if __name__ == '__main__':
     print("Actions space min: ", env.action_space.low)
     print("Actions space max: ", env.action_space.high)
     
-    ipdb.set_trace()
     env.reset()
     
     for epoch in range(10):
         env.reset()
         print ("New episode")
-        for state in range(10):
+        for state in range(100):
+            env.render(mode='human')
             # actions = []
             # for i in range(env.getNumberofAgents()):
             #     action = ((actionSpace.high - actionSpace.low) * np.random.uniform(size=actionSpace.low.shape[0])  ) + actionSpace.low
@@ -50,6 +57,7 @@ if __name__ == '__main__':
             time.sleep(1 / 60)
             action = actionSpace.sample()
             observation, reward,  done, info = env.step(actionSpace.sample())
+            # observation, reward,  done, info = env.step(np.ones(actionSpace.shape))
             print ("Reward: ", reward, "Action: ", action, " observation: ", observation)
             print ("Done: ", done)
             if env.action_space.shape != action.shape:
@@ -59,7 +67,8 @@ if __name__ == '__main__':
             if ( done ):
                 break
 
-    ipdb.set_trace()
+    ipdb.set_trace()   
             
-            
-# env.finish()
+
+if __name__ == '__main__':
+    main()

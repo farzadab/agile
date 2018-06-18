@@ -15,17 +15,28 @@ class PointMass(gym.Env):
         'render.modes' : ['human', 'rgb_array'],
         'video.frames_per_second' : 20
     }
+    reward_styles = {
+        'velocity': dict(vel=1, pos=0, goal=100),
+        'distsq'  : dict(vel=0, pos=1, goal=0),
+    }
 
-    def __init__(self, max_steps=100, randomize_goal=True, writer=None, reset=True):
+    def __init__(self, max_steps=100, randomize_goal=True, writer=None, reset=True, reward_style='velocity'):
         self.max_speed = 2.
         self.max_torque = 2.
         self.max_position = 20.
         self.max_steps = max_steps
         self.treshold = 2.
-        self.goal_reward = 100
         self.dt = .1
         self.mass = .2
         self.randomize_goal = randomize_goal
+        
+        if reward_style in self.reward_styles:
+            self.reward_style = self.reward_styles[reward_style]
+        else:
+            raise ValueError(
+                'Incorrent `reward_style` argument %s. Should be one of [%s]'
+                % (reward_style, ', '.join(self.reward_styles.keys()))
+            )
 
         self.writer = writer
 
@@ -36,14 +47,15 @@ class PointMass(gym.Env):
         self.act_size = 2
         
         high_action = self.max_torque * np.ones(self.act_size)
-        self.action_space = gym.spaces.Box(low=-high_action, high=high_action)
+        self.action_space = gym.spaces.Box(low=-high_action, high=high_action, dtype=np.float32)
 
         high_position = np.concatenate([self.max_position * np.ones(4), self.max_speed * np.ones(2)])
-        self.observation_space = gym.spaces.Box(low=-high_position, high=high_position)
+        self.observation_space = gym.spaces.Box(low=-high_position, high=high_position, dtype=np.float32)
 
         self.seed()
         if reset:
             self.reset()
+        
     
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -205,3 +217,12 @@ class CircularPointMass(PointMass):
         self.phase += self.angular_speed
         self._set_goal_pos()
         return super().step(u)
+
+
+_ENV_MAP = dict(PointMass=PointMass, CircularPointMass=CircularPointMass)
+
+def get_env(name, *args, **kwargs):
+    if name in _ENV_MAP:
+        return _ENV_MAP[name](*args, **kwargs)
+    else:
+        return gym.make(name)

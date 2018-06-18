@@ -1,44 +1,42 @@
-import json
-import gym
-import os
-
 from algorithms.PPO import PPO
-from algorithms.senv import PointMass, CircularPointMass
-from argparser import Args, ArgsEnum
+from algorithms.senv import get_env
+from argparser import Args
 from logs import LogMaster
 
 
-args = Args(
-    desc='',
+def main():
+    args = Args(
+        desc='',
 
-    store=True,
-    render=False,
+        store=True,
+        render=False,
 
-    env_max_steps=100,
-    env_randomize_goal=True,
+        env_name='PointMass',
+        env_reward_style='velocity',
+        env_max_steps=100,
+        env_randomize_goal=True,
 
-    gamma=0.9,
-    nb_iters=400,
-    nb_max_steps=1000,
-    nb_updates=20,
-    batch_size=512,
-    normalization_steps=1000,
-    running_norm=True,
-    # TODO: add env here, requires registering my envs ....
-    # TODO: add reward function that was used here
-).parse()
+        gamma=0.9,
+        nb_iters=400,
+        nb_max_steps=1000,
+        nb_updates=20,
+        batch_size=512,
+        normalization_steps=1000,
+        running_norm=True,
+        # TODO: add env here, requires registering my envs ....
+        # TODO: add reward function that was used here
+    ).parse()
 
-if __name__ == '__main__':
-    import gym
-    from algorithms.senv import PointMass
-    
-    # use logging ....
     logm = LogMaster(args)
 
-    # env = gym.make('Pendulum-v0')
-    env = PointMass(randomize_goal=args.env_randomize_goal, writer=logm.get_writer(), max_steps=args.env_max_steps)
+    env = get_env(
+        name=args.env_name,
+        randomize_goal=args.env_randomize_goal,
+        max_steps=args.env_max_steps,
+        reward_style=args.env_reward_style,
+        writer=logm.get_writer(),
+    )
 
-    # ppo = PPO(env, gamma=0.9, hidden_layers=[4], writer=logm.get_writer(), running_norm=True, render=False)
     ppo = PPO(
         env, gamma=args.gamma, running_norm=args.running_norm,
         critic_layers=[8], actor_layers=[],
@@ -67,3 +65,7 @@ if __name__ == '__main__':
             batch_size=args.batch_size)
     finally:
         env.close()
+
+
+if __name__ == '__main__':
+    main()

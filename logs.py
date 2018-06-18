@@ -37,7 +37,7 @@ class LogMaster(object):
                 ))
                 args.desc = input()
             
-            args.desc = 'Experiment description: ' + args.desc
+            args.desc = args.desc
 
             self.writer = tensorboardX.SummaryWriter()
             self.log_dir = self.writer.file_writer.get_logdir()
@@ -50,17 +50,18 @@ class LogMaster(object):
         return self.log_dir
     
     def store_exp_data(self, variant, extras=None):
-        repo = pygit2.Repository('.')
-        
-        full_variant = dict(
-            variant,
-            ## added character `z` at the start so that it is printed at the end of the list when sorted
-            zgit_commit_id=str(repo.head.target),
-            zgit_commit_msg=repo[repo.head.target].message,
-            **vars(self.args)
-        )
-        
-        json_dump(full_variant, os.path.join(self.log_dir, 'variant.json'))
-        
-        if extras is not None:
-            json_dump(extras, os.path.join(self.log_dir, 'extras.json'))
+        if self.log_dir is not None:
+            repo = pygit2.Repository('.')
+            
+            full_variant = dict(
+                variant,
+                ## added character `z` at the start so that it is printed at the end of the list when sorted
+                zgit_commit_id=str(repo.head.target),
+                zgit_commit_msg=repo[repo.head.target].message,
+                **vars(self.args)
+            )
+            
+            json_dump(full_variant, os.path.join(self.log_dir, 'variant.json'))
+            
+            if extras is not None:
+                json_dump(extras, os.path.join(self.log_dir, 'extras.json'))

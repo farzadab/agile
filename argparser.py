@@ -3,48 +3,6 @@ import argparse
 import enum
 import copy
 
-# The option_string is always gonna be --<arg_name>
-# And everything is always assumed to be required if the default is not present
-_DEFAULT_ARGS = {
-    'env': {
-        'default': 'PDCrab2DCustomEnv-v0',
-        'help': 'Name of the Gym environment to run',
-    },
-    'mode': {
-        'default': 'human',
-        'help': 'The render mode for the environment. "human" will open a GUI',
-    },
-    'desc': {
-        'help': 'Description of what the experiment is trying to accomplish',
-    },
-    'timesteps': {
-        'type': int,
-        'default': 1000,
-        'help': 'For how many timesteps should we run the application',
-    },
-    'nb_iters': {
-        'type': int,
-        'help': 'Number of iterations to run the algorithm',
-    },
-    'batch_size': {
-        'type': int,
-        'default': 512,
-        'help': 'The size of the batch at each optimization step',
-    },
-    'running_norm': {
-        'type': bool,
-        'help': 'Whether or not to use a running average for normalization',
-    },
-    'store': {
-        'type': bool,
-        'help': 'Whether or not to store the result and logs (tensorboard, variants, etc)',
-    },
-    'ctrl': {
-        'help': 'Name of the controller to use',
-    },
-}
-
-
 # TODO: legacy, should remove later
 def parse_args(description='', vars_list=[]):
     parser = argparse.ArgumentParser(
@@ -85,4 +43,58 @@ class Args(object):
             # set option_string to --<arg_name>
             parser.add_argument('--' + var, **details)
         return parser.parse_args()
-        
+
+
+def str2bool(v):
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
+# The option_string is always gonna be --<arg_name>
+# And everything is always assumed to be required if the default is not present
+_DEFAULT_ARGS = {
+    'env': {
+        'default': 'PDCrab2DCustomEnv-v0',
+        'help': 'Name of the Gym environment to run',
+    },
+    'mode': {
+        'default': 'human',
+        'help': 'The render mode for the environment. "human" will open a GUI',
+    },
+    'desc': {
+        'help': 'Description of what the experiment is trying to accomplish',
+    },
+    'timesteps': {
+        'type': int,
+        'default': 1000,
+        'help': 'For how many timesteps should we run the application',
+    },
+    'nb_iters': {
+        'type': int,
+        'help': 'Number of iterations to run the algorithm',
+    },
+    'batch_size': {
+        'type': int,
+        'default': 512,
+        'help': 'The size of the batch at each optimization step',
+    },
+    'render': {
+        'type': str2bool,
+        'help': 'Whether or not to visually render the environment',
+    },
+    'running_norm': {
+        'type': str2bool,
+        'help': 'Whether or not to use a running average for normalization',
+    },
+    'store': {
+        'type': str2bool,
+        'help': 'Whether or not to store the result and logs (tensorboard, variants, etc)',
+    },
+    'ctrl': {
+        'help': 'Name of the controller to use',
+    },
+}

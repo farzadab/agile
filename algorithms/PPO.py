@@ -28,9 +28,11 @@ class PPO(object):
         self.render = render
         self.writer = writer
         self.running_norm = running_norm
+
+        self.save_path = None
         if self.writer is not None:
             self.save_path = os.path.join(self.writer.file_writer.get_logdir(), 'models')
-        
+
         self.actor = ActorNet(env, actor_layers, log_std_noise=-1)
         self.critic = make_net([env.observation_space.shape[0]] + critic_layers + [1], [th.nn.ReLU() for _ in critic_layers])
         self.actor_optim = th.optim.SGD(self.actor.net.parameters(), lr=0.01, weight_decay=0.0003)
@@ -44,7 +46,7 @@ class PPO(object):
 
         for i_iter in range(nb_iters):
             print('\rIteration: %d' % (i_iter+1), end='')
-            
+
             mem = ReplayMemory(gamma=self.gamma)
 
             # TODO: for GAE and TD(lambda) may need to assume that mem stores a single episode
@@ -147,7 +149,7 @@ class PPO(object):
                     self.norm_state.observe(_state)
 
             if self.render:
-                env.render(mode='human')
+                self.env.render(mode='human')
 
             act = self.actor.get_action(th.FloatTensor(nstate), explore=True).detach().numpy()
             acts.append(act)
@@ -224,7 +226,7 @@ class PPO(object):
         os.makedirs(path, exist_ok=True)
         self.actor.save_model(os.path.join(path, '%s.actor' % str(index)))
         th.save(self.critic, os.path.join(path, '%s.critic' % str(index)))
-    
+
     def load_models(self, path, index=''):
         self.actor.load_model(os.path.join(path, '%s.actor' % str(index)))
         self.critic.load_state_dict(th.load(os.path.join(path, '%s.critic' % str(index))))
@@ -242,10 +244,10 @@ class ReplayMemory(object):
 
     def record(self, s, a, r, ns):
         self.data.append(ObservedTuple(s, a, r, ns))
-    
+
     def calc_episode_rewards(self):
         rew = 0
-        
+
         for t in reversed(self.data[self.episode_start_index:]):
             rew = t.r + self.gamma * rew
             t.set_cum_rew(rew)
