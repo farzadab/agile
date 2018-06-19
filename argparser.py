@@ -77,10 +77,17 @@ _DEFAULT_ARGS = {
         'type': int,
         'help': 'Number of iterations to run the algorithm',
     },
+    'env_max_steps': {
+        'type': int,
+        'help': 'Timelimit for the environment',
+    },
     'batch_size': {
         'type': int,
         'default': 512,
         'help': 'The size of the batch at each optimization step',
+    },
+    'replay_path': {
+        'help': 'If specified, the code will not train and will only replay the saved policy',
     },
     'render': {
         'type': str2bool,

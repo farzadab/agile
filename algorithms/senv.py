@@ -87,12 +87,12 @@ class PointMass(gym.Env):
         p = np.clip(p + v * self.dt, -self.max_position, self.max_position)
 
         distance = np.linalg.norm(g-p)
-        # reward += np.dot(v, g-p) / distance - .001*(np.linalg.norm(u)**2)
-        reward += -1 * (distance / self.max_position) ** 2
+        reward += self.reward_style['vel'] * np.dot(v, g-p) / distance - .001*(np.linalg.norm(u)**2)
+        reward -= self.reward_style['pos'] * (distance / self.max_position) ** 2
 
         reached = distance < self.treshold
-        # if reached:
-        #     reward += self.goal_reward
+        if reached:
+            reward += self.reward_style['goal']
         
         done = reached or (self.i_step >= self.max_steps)
 

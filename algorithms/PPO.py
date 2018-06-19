@@ -35,12 +35,14 @@ class PPO(object):
 
         self.actor = ActorNet(env, actor_layers, log_std_noise=-1)
         self.critic = make_net([env.observation_space.shape[0]] + critic_layers + [1], [th.nn.ReLU() for _ in critic_layers])
-        self.actor_optim = th.optim.SGD(self.actor.net.parameters(), lr=0.01, weight_decay=0.0003)
-        self.critic_optim = th.optim.SGD(self.critic.parameters(), lr=0.001, weight_decay=0.0003)
+        self.init_optims()
 
         self.norm_state = Stats(env.observation_space.shape[0])
         self.norm_rew = Stats(1)
 
+    def init_optims(self):
+        self.actor_optim = th.optim.SGD(self.actor.net.parameters(), lr=0.01, weight_decay=0.0003)
+        self.critic_optim = th.optim.SGD(self.critic.parameters(), lr=0.001, weight_decay=0.0003)
 
     def train(self, nb_iters, nb_max_steps, nb_updates, batch_size):
 
@@ -224,12 +226,26 @@ class PPO(object):
 
     def save_models(self, path, index=''):
         os.makedirs(path, exist_ok=True)
-        self.actor.save_model(os.path.join(path, '%s.actor' % str(index)))
-        th.save(self.critic, os.path.join(path, '%s.critic' % str(index)))
+        save_obj = dict(
+            actor=self.actor.net.state_dict(),
+            critic=self.critic.state_dict(),
+            norm_rew=self.norm_rew,
+            norm_state=self.norm_state
+        )
+        th.save(save_obj, os.path.join(path, '%s-ppo.pt' % str(index)))
+        # self.actor.save_model(os.path.join(path, '%s-actor.pt' % str(index)))
+        # th.save(self.critic, os.path.join(path, '%s-critic.pt' % str(index)))
 
-    def load_models(self, path, index=''):
-        self.actor.load_model(os.path.join(path, '%s.actor' % str(index)))
-        self.critic.load_state_dict(th.load(os.path.join(path, '%s.critic' % str(index))))
+    def load_models(self, path):
+        loaded_obj = th.load(path)
+        
+        self.actor.net.load_state_dict(loaded_obj['actor'])
+        self.critic.load_state_dict(loaded_obj['critic'])
+        self.norm_rew = loaded_obj['norm_rew']
+        self.norm_state = loaded_obj['norm_state']
+        # self.actor.load_model(os.path.join(path, '%s.actor' % str(index)))
+        # self.critic.load_state_dict(th.load(os.path.join(path, '%s.critic' % str(index))))
+        self.init_optims()
 
 
 # TODO: merge with dynamics.Data

@@ -26,8 +26,10 @@ TODO PPO:
     
     technical:
         ✔ refactor the visualization part of the code @started(18-06-13 19:40) @done(18-06-14 14:49) @lasted(19h9m35s)
+        ☐ experiment: start from the same state?
         ☐ better logging system
-        ☐ store policy/value function
+        ✔ store policy/value function @done(18-06-18 17:24)
+            ✔ replay for policy @done(18-06-18 18:23)
         ☐ state object?
 
     doc:
