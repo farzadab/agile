@@ -11,7 +11,7 @@ ARGS = Args(
     store=True,
     render=False,
 
-    env_name='PointMass',
+    env='PointMass',
     env_reward_style='velocity',
     env_max_steps=100,
     env_randomize_goal=True,
@@ -33,7 +33,7 @@ def main():
     logm = LogMaster(ARGS)
 
     env = get_env(
-        name=ARGS.env_name,
+        name=ARGS.env,
         randomize_goal=ARGS.env_randomize_goal,
         max_steps=ARGS.env_max_steps,
         reward_style=ARGS.env_reward_style,
@@ -74,7 +74,7 @@ def replay(path):
     from algorithms.PPO import ReplayMemory
     ARGS.env_max_steps *= 2
     env = get_env(
-        name=ARGS.env_name,
+        name=ARGS.env,
         randomize_goal=ARGS.env_randomize_goal,
         max_steps=ARGS.env_max_steps,
         reward_style=ARGS.env_reward_style,

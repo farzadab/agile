@@ -199,6 +199,7 @@ class CircularPointMass(PointMass):
     def __init__(self, radius=None, angular_speed=0.02, *args, **kwargs):
         super().__init__(reset=False, *args, **kwargs)
         self.angular_speed = angular_speed
+        self.treshold = -1.  # should never achieve the goal, just needs to follow it
         self.radius = radius if radius is not None else self.max_position / 2
         self.reset()
 

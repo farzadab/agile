@@ -100,4 +100,8 @@ Jun15_16-45-08: randomize_goal and distance squared works too. Not sure how well
 Jun18_18-02-41: python3 -m algorithms.main --env_reward_style='velocity' --desc 're-running Jun15_15-27-31 since it was removed'
 Jun18_18-02-16: python3 -m algorithms.main --env_reward_style='distsq' --desc 're-running Jun15_16-45-08 since it was removed'
 
-Jun18_18-27-02: python3 -m algorithms.main --env_name CircularPointMass --env_randomize_goal false --env_reward_style velocity --env_max_steps 200  --desc 'circular point-mass 1st trial'
+Jun18_18-27-02: python3 -m algorithms.main --env CircularPointMass --env_randomize_goal false --env_reward_style velocity --env_max_steps 200  --desc 'circular point-mass 1st trial'
+
++++ found bug in the CircularPointMass environment
+
+Jun18_18-42-16: python3 -m algorithms.main --env CircularPointMass --env_randomize_goal false --env_reward_style velocity --env_max_steps 200  --desc 'circular after goal-bugfix'
