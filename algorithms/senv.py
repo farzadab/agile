@@ -79,12 +79,7 @@ class PointMass(gym.Env):
         
         self.last_u = u
 
-        # just a simple (dumb) explicit integration ... 
-        v = v + u * self.dt / self.mass
-        if np.linalg.norm(v) > self.max_speed:
-            v = v / np.linalg.norm(v) * self.max_speed
-
-        p = np.clip(p + v * self.dt, -self.max_position, self.max_position)
+        p, v = self._integrate(p, v, u)
 
         distance = np.linalg.norm(g-p)
         reward += self.reward_style['vel'] * np.dot(v, g-p) / distance - .001*(np.linalg.norm(u)**2)
@@ -98,6 +93,16 @@ class PointMass(gym.Env):
 
         self.state = np.concatenate([p, g, v])
         return self._get_obs(), float(reward), done, {}
+
+    def _integrate(self, p, v, u):
+        # just a simple (dumb) explicit integration ... 
+        v = v + u * self.dt / self.mass
+        if np.linalg.norm(v) > self.max_speed:
+            v = v / np.linalg.norm(v) * self.max_speed
+
+        p = np.clip(p + v * self.dt, -self.max_position, self.max_position)
+
+        return p, v
 
     def reset(self):
         high = self.observation_space.high
@@ -195,6 +200,18 @@ class PointMass(gym.Env):
             self.viewer.close()
 
 
+class PointMassV2(PointMass):
+    def _integrate(self, cur_p, cur_v, u):
+        _, v = super()._integrate(cur_p, cur_v, u)
+
+        p = np.clip(
+            cur_p  +  v * self.dt  +  0.5 * u * self.dt * self.dt,
+            -self.max_position, self.max_position
+        )
+        
+        return p, v
+
+
 class CircularPointMass(PointMass):
     def __init__(self, radius=None, angular_speed=0.02, start_at_goal=False, *args, **kwargs):
         super().__init__(reset=False, *args, **kwargs)
@@ -228,7 +245,12 @@ class CircularPointMassSAG(CircularPointMass):
         super().__init__(start_at_goal=True, *args, **kwargs)
 
 
-_ENV_MAP = dict(PointMass=PointMass, CircularPointMass=CircularPointMass, CircularPointSAG=CircularPointMassSAG)
+_ENV_MAP = dict(
+    PointMass=PointMass, PM=PointMass,
+    PM2=PointMassV2,
+    CircularPointMass=CircularPointMass, CPM=CircularPointMass,
+    CircularPointSAG=CircularPointMassSAG, CPSAG=CircularPointMassSAG,
+)
 
 def get_env(name, *args, **kwargs):
     if name in _ENV_MAP:
