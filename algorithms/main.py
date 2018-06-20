@@ -16,6 +16,7 @@ ARGS = Args(
     env_max_steps=100,
     env_randomize_goal=True,
 
+    load_path='',
     gamma=0.9,
     nb_iters=400,
     nb_max_steps=1000,
@@ -42,10 +43,13 @@ def main():
 
     ppo = PPO(
         env, gamma=ARGS.gamma, running_norm=ARGS.running_norm,
-        critic_layers=[8], actor_layers=[],
+        critic_layers=[16,16], actor_layers=[],
         render=ARGS.render, writer=logm.get_writer(),
     )
-    ppo.sample_normalization(ARGS.normalization_steps)
+    if ARGS.load_path:
+        ppo.load_models(ARGS.load_path)
+    else:
+        ppo.sample_normalization(ARGS.normalization_steps)
 
     logm.store_exp_data(
         variant=dict(  # automatically stores args, commit ID, etc
@@ -72,6 +76,9 @@ def main():
 
 def replay(path):
     from algorithms.PPO import ReplayMemory
+    import json
+    import torch as th
+
     ARGS.env_max_steps *= 2
     env = get_env(
         name=ARGS.env,
@@ -80,17 +87,34 @@ def replay(path):
         reward_style=ARGS.env_reward_style,
         writer=None,
     )
+    try:
+        ppo = PPO(
+            env, gamma=ARGS.gamma, running_norm=ARGS.running_norm,
+            critic_layers=[8], actor_layers=[],
+            render=True, writer=None,
+        )
+        ppo.load_models(path)
+        policy = ppo.actor.net.state_dict()
+        if len(policy) == 2:  # printing out the policy only if it is a linear one (more complex policies are hard to represent)
+            print('Policy:')
+            norm_matrix = th.cat(
+                (
+                    th.cat((th.diag(ppo.norm_state.std), th.zeros((1,ppo.norm_state.std.shape[0])))),
+                    th.cat((ppo.norm_state.mean, th.FloatTensor([1]))).reshape(-1,1),
+                ),
+                1
+            )
+            actor_matrix = th.cat((policy['0.weight'], policy['0.bias'].reshape(-1,1)), 1)
+            print(norm_matrix.mm(actor_matrix.t()))
 
-    ppo = PPO(
-        env, gamma=ARGS.gamma, running_norm=ARGS.running_norm,
-        critic_layers=[8], actor_layers=[],
-        render=True, writer=None,
-    )
-    ppo.load_models(path)
-    ppo.actor.log_std[0] = -20
+        # print('\npolicy:\n', json.dumps(dict([(k,v.tolist()) for k,v in ppo.actor.net.state_dict().items()]), sort_keys=True, indent=4))
+        # print('\nvalue func:\n', json.dumps(dict([(k,v.tolist()) for k,v in ppo.critic.state_dict().items()]), sort_keys=True, indent=2))
+        ppo.actor.log_std[0] = -20
 
-    mem = ReplayMemory(gamma=ARGS.gamma)
-    ppo.sample_episode(ARGS.nb_max_steps * 2, mem, 0)
+        mem = ReplayMemory(gamma=ARGS.gamma)
+        ppo.sample_episode(ARGS.nb_max_steps * 2, mem, 0)
+    finally:
+        env.close()
 
 
 if __name__ == '__main__':

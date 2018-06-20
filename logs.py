@@ -58,6 +58,7 @@ class LogMaster(object):
                 ## added character `z` at the start so that it is printed at the end of the list when sorted
                 zgit_commit_id=str(repo.head.target),
                 zgit_commit_msg=repo[repo.head.target].message,
+                # TODO: command
                 **vars(self.args)
             )
             

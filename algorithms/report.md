@@ -1,4 +1,4 @@
-# Vocab
+### Vocab
 `-->` indicates the value/modification of hyper-parameters or design decisions
 `+++` indicates addition of new feature
 `🔍🔍🔍` missing saved data
@@ -7,8 +7,9 @@
 `???` question or wondering: can be the basis of the next experiments
 `Res` indicates a response (or answer) to a question, most likely an answer found later down the line
 `⚫⚫⚫` misc
+`>` description or explanation about the run
 
-# Report
+### Report
 
 ## 11/06/2018 - Commit 554ca445dbe046c8a91f754c60793f35ce628fc6
 --> actor_optim: SGD(lr=0.001, weight_decay=0.0003)
@@ -97,11 +98,44 @@ Jun15_16-45-08: randomize_goal and distance squared works too. Not sure how well
 
 ## 18/06/2018 - Commit 62ecde1ebda63e652fe86cad27a9bb814d244391
 
-Jun18_18-02-41: python3 -m algorithms.main --env_reward_style='velocity' --desc 're-running Jun15_15-27-31 since it was removed'
+Jun18_18-02-41 python3 -m algorithms.main --env_reward_style='velocity' --desc 're-running Jun15_15-27-31 since it was removed'
+> almost perfect!
+> Policy is just a simple PD-controller:
+[[ -9.6279,  -0.5611],
+ [ -0.7100,  -8.4666],
+ [ 11.5908,   1.1154],
+ [  0.5532,  11.2685],
+ [ -0.1617,  -0.0322],
+ [ -0.0042,  -0.1058],
+ [  0.0314,  -0.0777]]
+
+
 Jun18_18-02-16: python3 -m algorithms.main --env_reward_style='distsq' --desc 're-running Jun15_16-45-08 since it was removed'
+> makes a weird circular motion when it gets close to the target, needs investagation (TODO)
+
+Jun19_11-30-53: python3 -m algorithms.main --env_randomize_goal false --env_reward_style='distsq' --desc 'distsq works poorly, why? making the task simpler'
+> still not so good
+Jun19_12-25-34: python3 -m algorithms.main --env CircularPointMass --env_reward_style='distsq' --desc 'see if distsq works well with follow circle task'
+> it's actually better, it was still getting better, need to investigate how farther it can go
+Jun19_14-05-27: python3 -m algorithms.main --env CircularPointMass --env_reward_style='distsq' --load_path runs/Jun19_12-25-34_farzad-desktop/models/399-ppo.pt --desc 'starting from already learned policy, to see how much better it can get'
+> was getting better, but not much
++++ hmm, maybe starting point at random is not such a good idea, added a "start-at-goal" feature: CircularPointSAG
+Jun19_14-38-00: python3 -m algorithms.main --env CircularPointSAG --env_reward_style='distsq' --desc '1st try after adding start-at-goal feature'
+Jun19_14-50-05: python3 -m algorithms.main --env CircularPointSAG --env_reward_style='velocity' --desc 'see how much faster it learns with velocity reward'
+
+# CircularPointMass
 
 Jun18_18-27-02: python3 -m algorithms.main --env CircularPointMass --env_randomize_goal false --env_reward_style velocity --env_max_steps 200  --desc 'circular point-mass 1st trial'
 
 +++ found bug in the CircularPointMass environment
 
 Jun18_18-42-16: python3 -m algorithms.main --env CircularPointMass --env_randomize_goal false --env_reward_style velocity --env_max_steps 200  --desc 'circular after goal-bugfix'
+> almost perfect!
+> Policy is just a simple PD-controller:
+[[-10.5300,   1.3206],
+ [ -1.1382,  -9.4609],
+ [  8.8153,   0.5839],
+ [ -1.3964,   8.1384],
+ [  0.6020,   0.0905],
+ [ -0.0276,   0.7987],
+ [  0.0507,   0.0119]]

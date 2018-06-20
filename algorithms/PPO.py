@@ -236,13 +236,16 @@ class PPO(object):
         # self.actor.save_model(os.path.join(path, '%s-actor.pt' % str(index)))
         # th.save(self.critic, os.path.join(path, '%s-critic.pt' % str(index)))
 
-    def load_models(self, path):
+    def load_models(self, path, actor=True, critic=True, norm=True):
         loaded_obj = th.load(path)
         
-        self.actor.net.load_state_dict(loaded_obj['actor'])
-        self.critic.load_state_dict(loaded_obj['critic'])
-        self.norm_rew = loaded_obj['norm_rew']
-        self.norm_state = loaded_obj['norm_state']
+        if actor:
+            self.actor.net.load_state_dict(loaded_obj['actor'])
+        if critic:
+            self.critic.load_state_dict(loaded_obj['critic'])
+        if norm:
+            self.norm_rew = loaded_obj['norm_rew']
+            self.norm_state = loaded_obj['norm_state']
         # self.actor.load_model(os.path.join(path, '%s.actor' % str(index)))
         # self.critic.load_state_dict(th.load(os.path.join(path, '%s.critic' % str(index))))
         self.init_optims()

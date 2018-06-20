@@ -89,6 +89,9 @@ _DEFAULT_ARGS = {
     'replay_path': {
         'help': 'If specified, the code will not train and will only replay the saved policy',
     },
+    'load_path': {
+        'help': 'The path for loading a previously saved network and continuing the training',
+    },
     'render': {
         'type': str2bool,
         'help': 'Whether or not to visually render the environment',
@@ -96,6 +99,10 @@ _DEFAULT_ARGS = {
     'running_norm': {
         'type': str2bool,
         'help': 'Whether or not to use a running average for normalization',
+    },
+    'env_randomize_goal': {
+        'type': str2bool,
+        'help': 'Whether or not to randomize the goal',
     },
     'store': {
         'type': str2bool,

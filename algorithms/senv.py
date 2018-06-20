@@ -1,4 +1,4 @@
-from gym.envs.classic_control import rendering
+
 from gym.utils import seeding
 import numpy as np
 import os.path as path
@@ -117,7 +117,7 @@ class PointMass(gym.Env):
         # return np.array([np.cos(theta), np.sin(theta), thetadot])
 
     def render(self, mode='human'):
-
+        from gym.envs.classic_control import rendering
         if self.viewer is None:
             self.viewer = rendering.Viewer(500,500)
             self.viewer.set_bounds(-self.max_position, self.max_position, -self.max_position, self.max_position)
@@ -196,9 +196,10 @@ class PointMass(gym.Env):
 
 
 class CircularPointMass(PointMass):
-    def __init__(self, radius=None, angular_speed=0.02, *args, **kwargs):
+    def __init__(self, radius=None, angular_speed=0.02, start_at_goal=False, *args, **kwargs):
         super().__init__(reset=False, *args, **kwargs)
         self.angular_speed = angular_speed
+        self.start_at_goal = start_at_goal
         self.treshold = -1.  # should never achieve the goal, just needs to follow it
         self.radius = radius if radius is not None else self.max_position / 2
         self.reset()
@@ -209,6 +210,8 @@ class CircularPointMass(PointMass):
         if self.randomize_goal:
             self.phase = self.np_random.uniform(0, 2*np.pi)
         self._set_goal_pos()
+        if self.start_at_goal:
+            self.state[0:2] = self.state[2:4]
         return self._get_obs()
         
     def _set_goal_pos(self):
@@ -220,7 +223,12 @@ class CircularPointMass(PointMass):
         return super().step(u)
 
 
-_ENV_MAP = dict(PointMass=PointMass, CircularPointMass=CircularPointMass)
+class CircularPointMassSAG(CircularPointMass):
+    def __init__(self, *args, **kwargs):
+        super().__init__(start_at_goal=True, *args, **kwargs)
+
+
+_ENV_MAP = dict(PointMass=PointMass, CircularPointMass=CircularPointMass, CircularPointSAG=CircularPointMassSAG)
 
 def get_env(name, *args, **kwargs):
     if name in _ENV_MAP:

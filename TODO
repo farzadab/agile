@@ -5,7 +5,7 @@ TODO PPO:
                 ✔ try naive normalization as well and run an experiment @started(18-06-14 11:57) @done(18-06-14 14:49) @lasted(2h52m41s)
                 normalization of reward should help with TD estimates
                 ☐ do running average but stop at some point?
-            ☐ not sure if I need it for actions or not (Glen says no)
+            ☐ not sure if I need it for actions or not (Glen says no): but maybe important
         ✔ more episodes per iteration @started(18-06-14 11:57) @done(18-06-14 14:49) @lasted(2h52m53s)
             ✔ fix ReplayMemory @critical @done(18-06-14 14:49)
         ☐ use TD estimates
@@ -13,6 +13,10 @@ TODO PPO:
             ☐ TD(lambda)
     
     experiments:
+        ☐ non-linear for distsq
+        ☐ not using running_norm for distsq
+        ☐ increase size of critic
+        ☐ add 1/2 * u^2 to p
         ✔ add images to tensorboard @done(18-06-18 11:50)
         ✔ better setup for running experiments @started(18-06-18 12:08) @done(18-06-18 13:23) @lasted(1h15m24s)
             ☐ validation criteria: reached as extra dict?
