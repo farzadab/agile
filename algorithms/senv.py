@@ -18,6 +18,7 @@ class PointMass(gym.Env):
     reward_styles = {
         'velocity': dict(vel=1, pos=0, goal=100),
         'distsq'  : dict(vel=0, pos=1, goal=0),
+        'distsq+g': dict(vel=0, pos=1, goal=5),
     }
 
     def __init__(self, max_steps=100, randomize_goal=True, writer=None, reset=True, reward_style='velocity'):
@@ -212,6 +213,21 @@ class PointMassV2(PointMass):
         return p, v
 
 
+class NStepPointMass(PointMass):
+    def __init__(self, step_multiplier=4, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.step_multiplier = step_multiplier
+
+    def step(self, u):
+        total_reward = 0
+        for i in range(self.step_multiplier):
+            state, reward, done, extra = super().step(u)
+            total_reward += reward
+            if done:
+                return state, total_reward / (i+1), done, extra
+        return state, total_reward / self.step_multiplier, done, extra
+
+
 class CircularPointMass(PointMass):
     def __init__(self, radius=None, angular_speed=0.02, start_at_goal=False, *args, **kwargs):
         super().__init__(reset=False, *args, **kwargs)
@@ -248,6 +264,7 @@ class CircularPointMassSAG(CircularPointMass):
 _ENV_MAP = dict(
     PointMass=PointMass, PM=PointMass,
     PM2=PointMassV2,
+    NSPM=NStepPointMass,
     CircularPointMass=CircularPointMass, CPM=CircularPointMass,
     CircularPointSAG=CircularPointMassSAG, CPSAG=CircularPointMassSAG,
 )

@@ -3,12 +3,15 @@ import numpy as np
 
 # Taken from https://gitlab.com/zxieaa/cassie.git
 class Stats():
-    def __init__(self, input_size):
+    def __init__(self, input_size, shift_mean=True, scale=True, clip=True):
         '''
         @brief used for normalizing a quantity (1D)
         @param input_size: the input_sizeension of the quantity
         '''
         # not really using the shared memory for now, but might be useful later
+        self.shift_mean = shift_mean
+        self.scale = scale
+        self.clip = clip
         self.input_size = input_size
         self.reset()
 
@@ -33,9 +36,16 @@ class Stats():
         if len(inputs.shape) > 1:
             obs_mean = obs_mean.unsqueeze(0).expand_as(inputs)
             obs_std = obs_std.unsqueeze(0).expand_as(inputs)
-        normalized = (inputs - obs_mean) / obs_std
+        normalized = inputs
+        if self.shift_mean:
+            normalized -= obs_mean
+        if self.scale:
+            normalized /= obs_std
+        if self.clip:
+            normalized = th.clamp(normalized, -10.0, 10.0)
+        # normalized = (inputs - obs_mean) / obs_std
         #obs_std = th.sqrt(self.var).unsqueeze(0).expand_as(inputs)
-        return th.clamp(normalized, -10.0, 10.0)
+        return normalized
 
     def reset(self):
         self.n = th.zeros(self.input_size).share_memory_()

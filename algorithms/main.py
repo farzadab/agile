@@ -90,10 +90,10 @@ def replay(path):
     try:
         ppo = PPO(
             env, gamma=ARGS.gamma, running_norm=ARGS.running_norm,
-            critic_layers=[8], actor_layers=[],
+            critic_layers=[16,16], actor_layers=[],
             render=True, writer=None,
         )
-        ppo.load_models(path)
+        ppo.load_models(path, critic=False)
         policy = ppo.actor.net.state_dict()
         if len(policy) == 2:  # printing out the policy only if it is a linear one (more complex policies are hard to represent)
             print('Policy:')

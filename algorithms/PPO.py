@@ -38,7 +38,7 @@ class PPO(object):
         self.init_optims()
 
         self.norm_state = Stats(env.observation_space.shape[0])
-        self.norm_rew = Stats(1)
+        self.norm_rew = Stats(1, shift_mean=False, scale=False, clip=False)  # basically, don't do anything at this point
 
     def init_optims(self):
         self.actor_optim = th.optim.SGD(self.actor.net.parameters(), lr=0.01, weight_decay=0.0003)

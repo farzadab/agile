@@ -1,15 +1,15 @@
-### Vocab
-`-->` indicates the value/modification of hyper-parameters or design decisions
-`+++` indicates addition of new feature
-`🔍🔍🔍` missing saved data
-`✖` indicates bad result (or failure) in an experiment
-`✔` indicates good result (or success) in an experiment
-`???` question or wondering: can be the basis of the next experiments
-`Res` indicates a response (or answer) to a question, most likely an answer found later down the line
-`⚫⚫⚫` misc
-`>` description or explanation about the run
+# Vocab
+  - `-->` indicates the value/modification of hyper-parameters or design decisions
+  - `+++` indicates addition of new feature
+  - `🔍🔍🔍` missing saved data
+  - `✖` indicates bad result (or failure) in an experiment
+  - `✔` indicates good result (or success) in an experiment
+  - `???` question or wondering: can be the basis of the next experiments
+  - `Res` indicates a response (or answer) to a question, most likely an answer found later down the line
+  - `⚫⚫⚫` misc
+  - `>` description or explanation about the run
 
-### Report
+# Report
 
 ## 11/06/2018 - Commit 554ca445dbe046c8a91f754c60793f35ce628fc6
 --> actor_optim: SGD(lr=0.001, weight_decay=0.0003)
@@ -123,7 +123,7 @@ Jun19_14-05-27: python3 -m algorithms.main --env CircularPointMass --env_reward_
 Jun19_14-38-00: python3 -m algorithms.main --env CircularPointSAG --env_reward_style='distsq' --desc '1st try after adding start-at-goal feature'
 Jun19_14-50-05: python3 -m algorithms.main --env CircularPointSAG --env_reward_style='velocity' --desc 'see how much faster it learns with velocity reward'
 
-# CircularPointMass
+### CircularPointMass
 
 Jun18_18-27-02: python3 -m algorithms.main --env CircularPointMass --env_randomize_goal false --env_reward_style velocity --env_max_steps 200  --desc 'circular point-mass 1st trial'
 
@@ -139,3 +139,34 @@ Jun18_18-42-16: python3 -m algorithms.main --env CircularPointMass --env_randomi
  [  0.6020,   0.0905],
  [ -0.0276,   0.7987],
  [  0.0507,   0.0119]]
+
+
+## 19/06/2018 - Commit 02ab398636558af19e3521a156666e4ee893a894
+
+??? Michiel suggests fixes for the suboptimal performance of "distsq": better integration, running_norm=False, increasing critic size and maybe actor?
++++ better integration: V2
+Jun19_18-42-03: python3 -m algorithms.main --env PM2 --env_reward_style='distsq' --desc 'PointMassV2 env: see if the integration matters'
+> awful ... and the results are comparable/worse than Jun18_18-02-16
+
++++ increasing critic size from [8] to [16,16]
+
+Jun19_17-16-33: python3 -m algorithms.main --env PM2 --env_reward_style='distsq' --desc 'PointMassV2 env: see if the integration matters'
+> a little better, but still awful :(
+Jun20_10-46-04: python3 -m algorithms.main --env PM2 --running_norm false --env_reward_style='distsq' --desc 'distsq with PM2 and no running_norm: see if disabling running_norm works'
+> not good
+Jun20_10-49-19: python3 -m algorithms.main --env PM2 --running_norm false --env_reward_style='distsq' --desc 'distsq with a non-linear critic: [8] instead of []'
+> a little better but still not good (may need more training)
+Res: seems like the critic loss is better with a larger critic network, but the performance hasn't changed much
+
+Jun20_10-54-51: python3 -m algorithms.main --env PM2 --running_norm false --env_reward_style='distsq' --env_max_steps 300 --nb_max_steps 1200 --desc 'distsq with PM2: increasing max_steps'
+> (this is probably unfair, but let's see if it matters)
+> but it was awful
+Jun20_13-37-15: python3 -m algorithms.main --env PM2 --running_norm false --env_reward_style='distsq' --env_max_steps 300 --nb_max_steps 3000 --desc 'distsq with PM2: increasing max_steps'
+
+Jun20_14-37-43: python3 -m algorithms.main --env PM2 --running_norm false --env_reward_style='distsq+g' --desc 'see if the goal reward matters'
+
+Jun20_14-55-08: python3 -m algorithms.main --env NSPM --env_reward_style='distsq' --desc 'seeing if increasing control-step (4x) matters too much'
+
++++ bug (TODO): maybe we terminate the last episode too soon so the cumulative reward is wrong ...
+
++++ bug (TODO, monkey-patched): shifting reward for normalization is wrong :(
