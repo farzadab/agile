@@ -13,9 +13,9 @@ def dtensor(v):
 class Data(dict):
     key_names = ['s', 'a', 's_n']
     def __init__(self, key_names=None, *args):
-        super(Data, self).__init__([(k, args[i] if len(args) > i else []) for i,k in enumerate(self.key_names)])
         if key_names is not None:
             self.key_names = key_names
+        super(Data, self).__init__([(k, args[i] if len(args) > i else []) for i,k in enumerate(self.key_names)])
         self._size = 0 if len(args) == 0 else len(args[0])
 
     def size(self):

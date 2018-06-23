@@ -4,6 +4,7 @@ pybullet
 numpy
 pygit2
 termcolor
+wrapt  # object proxies
 #path.py
 
 # PyTorch
@@ -16,7 +17,7 @@ tensorboardX
 
 ipdb
 
-# just for rllab, should be removed later
+## just for rllab, should be removed later
 path.py
 joblib
 pyprind
@@ -25,3 +26,18 @@ git+https://github.com/neocxi/Lasagne.git@484866cf8b38d878e92d521be445968531646b
 git+https://github.com/plotly/plotly.py.git@2594076e29584ede2d09f2aa40a8a195b3f3fc66#egg=plotly
 cached_property
 cloudpickle
+
+
+## just for OpenAI baselines. should be removed later
+gym[mujoco,atari,classic_control,robotics]
+scipy
+tqdm
+joblib
+zmq
+dill
+progressbar2
+mpi4py
+cloudpickle
+tensorflow>=1.4.0
+click
+opencv-python

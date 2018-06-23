@@ -25,9 +25,9 @@ class ActorNet(object):
     
     def get_nlog_prob(self, action, state):
         mu = self.forward(state)
-        ret = (action - mu) / (self.log_std.exp())
+        ret = (action - mu.expand_as(action)) / (self.log_std.exp().expand_as(action))
         ret = -0.5 * ret.pow(2)
-        return ret.sum(dim=-1) - self.log_std.expand_as(mu).sum(dim=-1)
+        return ret.sum(dim=-1) - self.log_std.expand_as(action).sum(dim=-1)
     
     def get_action(self, state, explore=False):
         action = self.forward(state)

@@ -28,6 +28,7 @@ ARGS = Args(
     # TODO: add reward function that was used here
 ).parse()
 
+# TODO: add layer sizes to Args
 
 def main():
 
@@ -43,7 +44,8 @@ def main():
 
     ppo = PPO(
         env, gamma=ARGS.gamma, running_norm=ARGS.running_norm,
-        critic_layers=[16,16], actor_layers=[],
+        hidden_layer_size=16, nb_layers=0, nb_critic_layers=2,
+        # critic_layers=[16,16], actor_layers=[],
         render=ARGS.render, writer=logm.get_writer(),
     )
     if ARGS.load_path:
@@ -90,7 +92,8 @@ def replay(path):
     try:
         ppo = PPO(
             env, gamma=ARGS.gamma, running_norm=ARGS.running_norm,
-            critic_layers=[16,16], actor_layers=[],
+            hidden_layer_size=16, nb_layers=0, nb_critic_layers=2,
+            # critic_layers=[16,16], actor_layers=[],
             render=True, writer=None,
         )
         ppo.load_models(path, critic=False)
@@ -111,7 +114,7 @@ def replay(path):
         # print('\nvalue func:\n', json.dumps(dict([(k,v.tolist()) for k,v in ppo.critic.state_dict().items()]), sort_keys=True, indent=2))
         ppo.actor.log_std[0] = -20
 
-        mem = ReplayMemory(gamma=ARGS.gamma)
+        mem = ReplayMemory(gamma=ARGS.gamma, gae_lambda=0.9)
         ppo.sample_episode(ARGS.nb_max_steps * 2, mem, 0)
     finally:
         env.close()

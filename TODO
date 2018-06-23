@@ -16,6 +16,9 @@ TODO PPO:
             ☐ TD(1)
             ☐ TD(lambda)
     
+    ☐ add layer sizes to Args
+    ☐ normalize actions
+
     nots and bolts:
         brutsekas textbook ...?
         ☐ visualize everything!
