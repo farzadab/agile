@@ -4,6 +4,7 @@ import copy
 from nets import NNModel, make_net
 from controllers import Controller
 from math import pi
+import random
 
 class ActorNet(object):
     def __init__(self, env, hidden_layers=[], log_std_noise=-2): #, *args, **kwargs):
@@ -11,6 +12,15 @@ class ActorNet(object):
             [env.observation_space.shape[0]] + hidden_layers + [env.action_space.shape[0]],
             [nn.ReLU() for _ in hidden_layers]
         )
+        # import ipdb
+        # ipdb.set_trace()  
+        self.net[-1].state_dict()['bias'][:] = 0
+        self.net[-1].state_dict()['weight'][:] /= 100
+        # self.net[-1].state_dict()['weight'][:] = th.FloatTensor([[-.5, 0, .5, 0, 0, 0], [0, -.5, 0, .5, 0, 0]])
+        # def pp(x):
+        #     if random.random() < 0.005:
+        #         print('grad:', x)
+        # list(self.net[-1].parameters())[0].register_hook(pp)
         # NNModel.__init__(self, net, *args, **kwargs)
         # super().__init__(env)
         self.log_std = th.FloatTensor([log_std_noise])
@@ -24,6 +34,9 @@ class ActorNet(object):
         return self.get_nlog_prob(action, state).exp() / norm_factor
     
     def get_nlog_prob(self, action, state):
+        '''
+        Computes the normalized log probability of taking actions under the current policy: log π(a|s) + const
+        '''
         mu = self.forward(state)
         ret = (action - mu.expand_as(action)) / (self.log_std.exp().expand_as(action))
         ret = -0.5 * ret.pow(2)

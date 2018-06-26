@@ -17,10 +17,10 @@ class PPO(object):
             hidden_layer_size=16,
             nb_layers=1, nb_critic_layers=None,
             eps=0.2,
-            init_lr=0.01,
+            init_lr=0.001,
             annealing_rate=0.99,
-            gamma=0.95,
-            gae_lambda=0.2,
+            gamma=0.9,
+            gae_lambda=0.8,
             running_norm=False,
             anneal_eps=True,
             writer=None, render=False):
@@ -35,7 +35,7 @@ class PPO(object):
         @param init_lr: the initial learning rate
         @param annealing_rate: rate by which the lr is annealed: lr = init_lr * annealing_rate ** epoch
         @param gamma: discount factor parameter (scalar)
-        @param gae_lambda: GAE λ parameter (scalar)
+        @param gae_lambda: the λ parameter in GAE(λ) (scalar)
         @param running_norm: whether or not to use a running average for normalization
         @param anneal_eps: whether or not to anneal the clipping ϵ parameter over time
         @param writer: writer for logging training curves and images(tensorboardX.SummaryWriter)
@@ -76,8 +76,8 @@ class PPO(object):
         self.norm_rew = Stats(1, shift_mean=False, scale=True, clip=False)
 
     def init_optims(self):
-        self.actor_optim = th.optim.SGD(self.actor.net.parameters(), lr=self.init_lr)
-        self.critic_optim = th.optim.SGD(self.critic.parameters(), lr=self.init_lr)
+        self.actor_optim = th.optim.Adam(self.actor.net.parameters(), lr=self.init_lr)
+        self.critic_optim = th.optim.Adam(self.critic.parameters(), lr=self.init_lr)
         
         self.scheduler = MultiOptimScheduler(
             th.optim.lr_scheduler.LambdaLR,
@@ -95,6 +95,10 @@ class PPO(object):
 
         for i_iter in range(nb_iters):
             print('\rIteration: %d' % (i_iter+1), end='')
+            # self.norm_state.mean[:] = 0
+            # self.norm_state.std[:] = 1
+            # print(self.actor.net[-1].state_dict()['weight'])
+            # print(self.norm_state.mean)
 
             mem = ReplayMemory(gamma=self.gamma, gae_lambda=self.gae_lambda)
 
@@ -133,10 +137,10 @@ class PPO(object):
                 self.writer.add_scalar('Extra/Value/Current', sum_vhat / nb_updates, i_iter)
                 # self.writer.add_scalar('Extra/Action/Adv', mem['adv'].mean(), i_iter)
 
-            if callable(getattr(self.env, 'visualize_solution')):
+            if callable(getattr(self.env, 'visualize_solution', None)):
                 self.env.visualize_solution(
-                    policy=lambda s: self.actor.forward(th.FloatTensor(s)).detach(),
-                    value_func=self._value_function,
+                    policy=lambda s: self.actor.forward(self.norm_state.normalize(th.FloatTensor(s))).detach(),
+                    value_func=lambda s: self._value_function(self.norm_state.normalize(s)),
                     i_iter=i_iter
                 )
 
@@ -222,6 +226,7 @@ class PPO(object):
 
             total_rew += _rew
             nstate = nstate_p
+            _state = _state_p
         
         # mem.calc_episode_rewards()
         # print('')
@@ -245,7 +250,8 @@ class PPO(object):
             # FIXME: hmm, I'm using an updated version of `critic` every time. is that alright?
             # v = sample.cr #sample.r + self.gamma * self.critic(sample.ns)
             self.critic.zero_grad()  # better way?
-            v = batch['creward'].unsqueeze(1)
+            # v = batch['creward'].unsqueeze(1)
+            v = batch['vtarg'].unsqueeze(1)
             vhat = self.critic(batch['state'])
             loss = criterion(vhat, v)
             # print(loss)
@@ -264,9 +270,10 @@ class PPO(object):
         # sum_adv = 0
 
         eps = self.eps
-        if self.anneal_eps:
-            # print(eps, self.scheduler.get_lr())
-            eps *= self.scheduler.get_lr()[0]
+        # TODO fix annealing: wrong size (tensor list) + wrong value (actual lr of critic, not the )
+        # if self.anneal_eps:
+        #     # print(eps, self.scheduler.get_lr())
+        #     eps *= self.scheduler.get_lr()[0]
 
         for batch in mem.iterate_once(batch_size):
             self.actor.zero_grad()
@@ -278,6 +285,7 @@ class PPO(object):
             # print(batch['action'].shape)
             ratio = self.actor.get_nlog_prob(batch['action'], batch['state']) - old_policy.get_nlog_prob(batch['action'], batch['state'])
             # print(ratio)
+            # print(ratio.shape, batch['adv'].shape)
             ratio = ratio.exp()
             losses = th.min(
                 ratio * batch['adv'],
@@ -287,6 +295,8 @@ class PPO(object):
             loss.backward()
             self.actor_optim.step()
             total_loss += losses.sum()
+            
+            
             # sum_adv += adv
         # loss /= -1 * len(batch)  
         return float(loss) / mem.size()
@@ -370,14 +380,14 @@ class PPO(object):
 
 class ReplayMemory(Data):
     def __init__(self, gamma, gae_lambda):
-        super().__init__(['state', 'action', 'reward', 'nstate', 'td', 'adv', 'creward'])
+        super().__init__(['state', 'action', 'reward', 'nstate', 'td', 'adv', 'creward', 'vtarg'])
         self.gamma = gamma
         self.gae_lambda = gae_lambda
         self.episode_start_index = 0
         self.tensored = False
 
     def record(self, s, a, r, ns):
-        super().add_point(s, a, r, ns, 0, 0, 0)
+        super().add_point(s, a, r, ns, 0, 0, 0, 0)
 
     def calc_episode_targets(self, vfunc):
         # TODO: compute TD(λ)
@@ -385,23 +395,37 @@ class ReplayMemory(Data):
             return
         crew = 0
         adv = 0
-        vpred = vfunc(self['nstate'][-1])
-        for i in range(self.size()-1, self.episode_start_index, -1):
+        vpred = 0#vfunc(self['nstate'][-1])
+        for i in range(self.size()-1, self.episode_start_index-1, -1):
             crew = self['reward'][i] + crew * self.gamma
             
             vnext = vpred
             vpred = vfunc(self['state'][i])
-            td_delta = self['reward'][i] + self.gamma * vnext - vpred
+            ret_1step  = self['reward'][i] + self.gamma * vnext
+            td_delta = ret_1step - vpred
             adv = td_delta + adv * self.gamma * self.gae_lambda
 
-            if i == self.size()-1:  # correcting for the last episode
-                adv *= 1-self.gae_lambda
+            # if i == self.size()-1:  # correcting for the last episode
+            #     adv /= 1-self.gae_lambda
 
             self['td'][i] = td_delta
             self['adv'][i] = adv
             self['creward'][i] = crew
-            # self['vpred'][i] = vpred
+            self['vtarg'][i] = self['adv'][i] + vpred
             # self['vnext'][i] = vnext
+        
+        # print('---------------------------------------------')
+        # print(th.FloatTensor(self['td'])[self.episode_start_index:self.episode_start_index+10])
+        # print(th.FloatTensor(self['adv'])[self.episode_start_index:self.episode_start_index+10])
+        # print(th.FloatTensor(self['reward'])[self.episode_start_index:self.episode_start_index+10])
+        # print(th.FloatTensor(self['creward'])[self.episode_start_index:self.episode_start_index+10])
+        # print(th.FloatTensor(self['vtarg'])[self.episode_start_index:self.episode_start_index+10])
+        # print('...............')
+        # print(th.FloatTensor(self['td'])[-10:])
+        # print(th.FloatTensor(self['adv'])[-10:])
+        # print(th.FloatTensor(self['reward'])[-10:])
+        # print(th.FloatTensor(self['creward'])[-10:])
+        # print(th.FloatTensor(self['vtarg'])[-10:])
 
         self.episode_start_index = self.size()
         # if len(self.data):

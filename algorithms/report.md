@@ -155,8 +155,7 @@ Jun19_17-16-33: python3 -m algorithms.main --env PM2 --env_reward_style='distsq'
 Jun20_10-46-04: python3 -m algorithms.main --env PM2 --running_norm false --env_reward_style='distsq' --desc 'distsq with PM2 and no running_norm: see if disabling running_norm works'
 > not good
 Jun20_10-49-19: python3 -m algorithms.main --env PM2 --running_norm false --env_reward_style='distsq' --desc 'distsq with a non-linear critic: [8] instead of []'
-> a little better but still not good (may need more training)
-Res: seems like the critic loss is better with a larger critic network, but the performance hasn't changed much
+> a little better but still not good (may need more training)Res: seems like the critic loss is better with a larger critic network, but the performance hasn't changed much
 
 Jun20_10-54-51: python3 -m algorithms.main --env PM2 --running_norm false --env_reward_style='distsq' --env_max_steps 300 --nb_max_steps 1200 --desc 'distsq with PM2: increasing max_steps'
 > (this is probably unfair, but let's see if it matters)
@@ -167,6 +166,19 @@ Jun20_14-37-43: python3 -m algorithms.main --env PM2 --running_norm false --env_
 
 Jun20_14-55-08: python3 -m algorithms.main --env NSPM --env_reward_style='distsq' --desc 'seeing if increasing control-step (4x) matters too much'
 
-+++ bug (TODO): maybe we terminate the last episode too soon so the cumulative reward is wrong ...
++++ bug (fixed): maybe we terminate the last episode too soon so the cumulative reward is wrong ...
 
-+++ bug (TODO, monkey-patched): shifting reward for normalization is wrong :(
++++ bug (monkey-patched): shifting reward for normalization is wrong :(
+
++++ bug (fixed) in ReplayMemory.calc_episode_targets wrong index: start episode was not updated
+
++++ bug (fixed, visualization): did not use to normalize
+
+--> the holy fix: using Adam instead of SGD :'(
+
+--> gae_lambda=0.8
+Jun25_19-27-38: python3 -m algorithms.main --env_reward_style distsq  --nb_max_steps 10000 --running_norm false --desc 'Adam, no normalization and gae_lambda=0.8'
+> so larger λ values don't hurt now
+Jun25_19-38-55: python3 -m algorithms.main --env_reward_style 'distsq'  --running_norm true --nb_max_steps 10000 --desc 'test if normalization is bad or not'
+> not it's good to have
+Jun25_19-46-49: python3 -m algorithms.main --env_reward_style 'distsq' --nb_max_steps 10000 --desc 'see if normalization of advantage helps or not'

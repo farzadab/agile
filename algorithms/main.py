@@ -115,7 +115,7 @@ def replay(path):
         ppo.actor.log_std[0] = -20
 
         mem = ReplayMemory(gamma=ARGS.gamma, gae_lambda=0.9)
-        ppo.sample_episode(ARGS.nb_max_steps * 2, mem, 0)
+        ppo.sample_episode(ARGS.nb_max_steps, mem, 0)
     finally:
         env.close()
 

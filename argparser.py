@@ -81,6 +81,10 @@ _DEFAULT_ARGS = {
         'type': int,
         'help': 'Number of max steps to run for a single iteration of the algorithm',
     },
+    'nb_updates': {
+        'type': int,
+        'help': 'Number of optimizer updates at each iteration',
+    },
     'env_max_steps': {
         'type': int,
         'help': 'Timelimit for the environment',
