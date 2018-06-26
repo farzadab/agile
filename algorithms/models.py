@@ -61,3 +61,6 @@ class ActorNet(object):
     
     def load_model(self, path):
         self.net.load_state_dict(th.load(path))
+    
+    def is_linear(self):
+        return len(self.net) == 1

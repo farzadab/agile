@@ -95,6 +95,9 @@ class PPO(object):
 
         for i_iter in range(nb_iters):
             print('\rIteration: %d' % (i_iter+1), end='')
+
+            if i_iter > nb_iters / 2:
+                self.running_norm = False
             # self.norm_state.mean[:] = 0
             # self.norm_state.std[:] = 1
             # print(self.actor.net[-1].state_dict()['weight'])
@@ -267,25 +270,14 @@ class PPO(object):
     
     def update_actor(self, mem, old_policy, batch_size):
         total_loss = 0
-        # sum_adv = 0
 
         eps = self.eps
-        # TODO fix annealing: wrong size (tensor list) + wrong value (actual lr of critic, not the )
-        # if self.anneal_eps:
-        #     # print(eps, self.scheduler.get_lr())
-        #     eps *= self.scheduler.get_lr()[0]
+        if self.anneal_eps:
+            eps *= self.scheduler.get_annealing_factor()
 
         for batch in mem.iterate_once(batch_size):
             self.actor.zero_grad()
-            # FIXME: hmm, I'm using an updated version of `critic` every time. is that alright?
-            # # never mind for now, not using TD style update
-            # adv = sample.r + self.gamma * self.critic(sample.ns) - self.critic(sample.s)
-            # batch['adv']
-            # adv = sample.cr - self.critic(sample.s)
-            # print(batch['action'].shape)
             ratio = self.actor.get_nlog_prob(batch['action'], batch['state']) - old_policy.get_nlog_prob(batch['action'], batch['state'])
-            # print(ratio)
-            # print(ratio.shape, batch['adv'].shape)
             ratio = ratio.exp()
             losses = th.min(
                 ratio * batch['adv'],
@@ -296,9 +288,6 @@ class PPO(object):
             self.actor_optim.step()
             total_loss += losses.sum()
             
-            
-            # sum_adv += adv
-        # loss /= -1 * len(batch)  
         return float(loss) / mem.size()
 
     def save_models(self, path, index=''):
@@ -326,6 +315,22 @@ class PPO(object):
         # self.actor.load_model(os.path.join(path, '%s.actor' % str(index)))
         # self.critic.load_state_dict(th.load(os.path.join(path, '%s.critic' % str(index))))
         self.init_optims()
+    
+    def extract_linear_policy(self):
+        '''
+        Returns the actual policy, 
+        Only works when you have a linear actor
+        '''
+        policy = self.actor.net.state_dict()
+        norm_matrix = th.cat(
+            (
+                th.cat((th.diag(self.norm_state.std), th.zeros((1, self.norm_state.std.shape[0])))),
+                th.cat((self.norm_state.mean, th.FloatTensor([1]))).reshape(-1, 1),
+            ),
+            1
+        )
+        actor_matrix = th.cat((policy['0.weight'], policy['0.bias'].reshape(-1, 1)), 1)
+        return norm_matrix.mm(actor_matrix.t())
 
 
 # # TODO: merge with dynamics.Data
@@ -503,15 +508,18 @@ class ObservedTuple(object):
 
 # th.optim.lr_scheduler
 class MultiOptimScheduler(object):
-    def __init__(self, scheduler_class, optims, *args, **kwargs):
+    def __init__(self, scheduler_class, optims, lr_lambda, *args, **kwargs):
         self.schedulers = [
-            scheduler_class(optim, *args, **kwargs) for optim in optims
+            scheduler_class(optim, lr_lambda=lr_lambda, *args, **kwargs) for optim in optims
         ]
+        self.epochs = -1
+        self.lr_lambda = lr_lambda
     
-    def get_lr(self):
-        return self.schedulers[0].get_lr()
+    def get_annealing_factor(self):
+        return self.lr_lambda(self.epochs)
 
     def step(self, epoch=None):
+        self.epochs += 1
         for sched in self.schedulers:
             sched.step(epoch)
     

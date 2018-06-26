@@ -85,6 +85,18 @@ _DEFAULT_ARGS = {
         'type': int,
         'help': 'Number of optimizer updates at each iteration',
     },
+    'net_layer_size': {
+        'type': int,
+        'help': 'The size of each hidden layer',
+    },
+    'net_nb_layers': {
+        'type': int,
+        'help': 'The number of layers for the network',
+    },
+    'net_nb_critic_layers': {
+        'type': int,
+        'help': 'The number of layers for the critic network',
+    },
     'env_max_steps': {
         'type': int,
         'help': 'Timelimit for the environment',
@@ -93,6 +105,16 @@ _DEFAULT_ARGS = {
         'type': int,
         'default': 512,
         'help': 'The size of the batch at each optimization step',
+    },
+    'gamma': {
+        'type': float,
+        'default': 0.9,
+        'help': 'The discount factor of the reward γλ',
+    },
+    'gae_lambda': {
+        'type': float,
+        'default': 0.9,
+        'help': 'The λ parameter used in TD(λ) and GAE(λ)',
     },
     'replay_path': {
         'help': 'If specified, the code will not train and will only replay the saved policy',

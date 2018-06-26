@@ -3,55 +3,72 @@ from algorithms.senv import get_env
 from argparser import Args
 from logs import LogMaster
 
+def get_args():
+    return Args(
+        desc='',
 
-ARGS = Args(
-    desc='',
+        replay_path='',  # if specified, will not train and only replays the learned policy
+        store=True,
+        render=False,
 
-    replay_path='',  # if specified, will not train and only replays the learned policy
-    store=True,
-    render=False,
+        env='PointMass',
+        env_reward_style='velocity',
+        env_max_steps=100,
+        env_randomize_goal=True,
 
-    env='PointMass',
-    env_reward_style='velocity',
-    env_max_steps=100,
-    env_randomize_goal=True,
+        net_layer_size=16,
+        net_nb_layers=0,
+        net_nb_critic_layers=2,
 
-    load_path='',
-    gamma=0.9,
-    nb_iters=400,
-    nb_max_steps=1000,
-    nb_updates=20,
-    batch_size=512,
-    normalization_steps=1000,
-    running_norm=True,
-    # TODO: add env here, requires registering my envs ....
-    # TODO: add reward function that was used here
-).parse()
+        load_path='',
+        gamma=0.9,
+        gae_lambda=0.8,
+        nb_iters=400,
+        nb_max_steps=1000,
+        nb_updates=20,
+        batch_size=512,
+        normalization_steps=1000,
+        running_norm=True,
+    ).parse()
 
-# TODO: add layer sizes to Args
 
 def main():
+    args = get_args()
 
-    logm = LogMaster(ARGS)
+    writer = None
+    if args.store and not bool(args.replay_path):
+        logm = LogMaster(args)
+        writer = logm.get_writer()
 
     env = get_env(
-        name=ARGS.env,
-        randomize_goal=ARGS.env_randomize_goal,
-        max_steps=ARGS.env_max_steps,
-        reward_style=ARGS.env_reward_style,
-        writer=logm.get_writer(),
+        name=args.env,
+        randomize_goal=args.env_randomize_goal,
+        max_steps=args.env_max_steps,
+        reward_style=args.env_reward_style,
+        writer=writer,
     )
 
     ppo = PPO(
-        env, gamma=ARGS.gamma, running_norm=ARGS.running_norm,
-        hidden_layer_size=16, nb_layers=0, nb_critic_layers=2,
-        # critic_layers=[16,16], actor_layers=[],
-        render=ARGS.render, writer=logm.get_writer(),
+        env, gamma=args.gamma, gae_lambda=args.gae_lambda,
+        running_norm=args.running_norm,
+        hidden_layer_size=args.net_layer_size,
+        nb_layers=args.net_nb_layers, nb_critic_layers=args.net_nb_critic_layers,
+        writer=writer,
+        render=args.render or bool(args.replay_path),  # always render in replay mode
     )
-    if ARGS.load_path:
-        ppo.load_models(ARGS.load_path)
+
+    if args.replay_path:
+        replay(args, env, ppo)
     else:
-        ppo.sample_normalization(ARGS.normalization_steps)
+        train(args, env, ppo, logm)
+
+
+def train(args, env, ppo, logm=None):
+
+    if args.load_path:
+        ppo.load_models(args.load_path)
+    else:
+        ppo.sample_normalization(args.normalization_steps)
 
     logm.store_exp_data(
         variant=dict(  # automatically stores args, commit ID, etc
@@ -68,61 +85,37 @@ def main():
 
     try:
         ppo.train(
-            nb_iters=ARGS.nb_iters,
-            nb_max_steps=ARGS.nb_max_steps,
-            nb_updates=ARGS.nb_updates,
-            batch_size=ARGS.batch_size)
+            nb_iters=args.nb_iters,
+            nb_max_steps=args.nb_max_steps,
+            nb_updates=args.nb_updates,
+            batch_size=args.batch_size)
     finally:
         env.close()
 
 
-def replay(path):
+def replay(args, env, ppo):
     from algorithms.PPO import ReplayMemory
     import json
     import torch as th
 
-    ARGS.env_max_steps *= 2
-    env = get_env(
-        name=ARGS.env,
-        randomize_goal=ARGS.env_randomize_goal,
-        max_steps=ARGS.env_max_steps,
-        reward_style=ARGS.env_reward_style,
-        writer=None,
-    )
+    # args.env_max_steps *= 2
     try:
-        ppo = PPO(
-            env, gamma=ARGS.gamma, running_norm=ARGS.running_norm,
-            hidden_layer_size=16, nb_layers=0, nb_critic_layers=2,
-            # critic_layers=[16,16], actor_layers=[],
-            render=True, writer=None,
-        )
-        ppo.load_models(path, critic=False)
-        policy = ppo.actor.net.state_dict()
-        if len(policy) == 2:  # printing out the policy only if it is a linear one (more complex policies are hard to represent)
+        ppo.load_models(args.replay_path, critic=False)
+        if ppo.actor.is_linear():
             print('Policy:')
-            norm_matrix = th.cat(
-                (
-                    th.cat((th.diag(ppo.norm_state.std), th.zeros((1,ppo.norm_state.std.shape[0])))),
-                    th.cat((ppo.norm_state.mean, th.FloatTensor([1]))).reshape(-1,1),
-                ),
-                1
-            )
-            actor_matrix = th.cat((policy['0.weight'], policy['0.bias'].reshape(-1,1)), 1)
-            print(norm_matrix.mm(actor_matrix.t()))
+            print(ppo.extract_linear_policy())
 
         # print('\npolicy:\n', json.dumps(dict([(k,v.tolist()) for k,v in ppo.actor.net.state_dict().items()]), sort_keys=True, indent=4))
         # print('\nvalue func:\n', json.dumps(dict([(k,v.tolist()) for k,v in ppo.critic.state_dict().items()]), sort_keys=True, indent=2))
-        ppo.actor.log_std[0] = -20
 
-        mem = ReplayMemory(gamma=ARGS.gamma, gae_lambda=0.9)
-        ppo.sample_episode(ARGS.nb_max_steps, mem, 0)
+        ppo.actor.log_std[0] = -20  # simple hack to decrease the exploration level
+
+        mem = ReplayMemory(gamma=args.gamma, gae_lambda=0.9)
+        ppo.sample_episode(args.nb_max_steps, mem, 0)
     finally:
         env.close()
 
 
 if __name__ == '__main__':
-    if ARGS.replay_path:
-        replay(ARGS.replay_path)
-    else:
-        main()
+    main()
 

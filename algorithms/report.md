@@ -182,3 +182,14 @@ Jun25_19-27-38: python3 -m algorithms.main --env_reward_style distsq  --nb_max_s
 Jun25_19-38-55: python3 -m algorithms.main --env_reward_style 'distsq'  --running_norm true --nb_max_steps 10000 --desc 'test if normalization is bad or not'
 > not it's good to have
 Jun25_19-46-49: python3 -m algorithms.main --env_reward_style 'distsq' --nb_max_steps 10000 --desc 'see if normalization of advantage helps or not'
+> not sure, but doesn't seem to hurt either (note: both λ=0.2 and λ=0.8 seem to have worked on this problem)
+
+
+## 25/05/2018 - Commit 10bb09cd472da8f94c4f8b074db5de9e39171f04
+
+--> turning off running norm halfway through the training, since it can be detrimental after a while
+
+Jun26_12-52-28: python3 -m algorithms.main --env CPSAG --env_reward_style 'distsq' --nb_max_steps 5000 --desc 'test fixed code with moving target'
+> great! almost perfect after 40 iterations
+Jun26_12-57-49: python3 -m algorithms.main --env CPSAG --env_reward_style 'distsq' --nb_max_steps 1000 --desc 'how much does the # steps matter?'
+> still works well enough after 40 iterations. maybe this env is too easy?
