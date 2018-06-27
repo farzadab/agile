@@ -202,7 +202,15 @@ Jun26_13-32-50: python3 -m algorithms.main --env 'Pendulum-v0' --net_nb_layers 1
 Jun26_13-25-43: python3 -m algorithms.main --env 'MountainCarContinuous-v0' --net_nb_layers 1 --nb_max_steps 5000
 > doesn't work ... maybe increasing noise will help ...
 Jun26_14-43-12: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_layer_size 32 --net_nb_layers 1 --net_nb_critic_layers 2 --nb_max_steps 20000 --desc 'Hopper\!'
-
+> doesn't work: doesn't go beyond the first hop
 
 ## 26/06/2018 - Commit b1d4040560dcc7ae9bc2f027ac1918fd6418030a
 +++ better logging + logs return
+
+--> vpred = vfunc(self['nstate'][-1])
+Jun26_18-36-26: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_layer_size 32 --net_nb_layers 1 --net_nb_critic_layers 2 --nb_max_steps 20000 --desc "see if vpred = vfunc(self['nstate'][-1]) works"
+> this should not really work anyway, only apply it when the agent is still alive
+Jun26_18-52-22: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_layer_size 32 --net_nb_layers 2 --net_nb_critic_layers 3 --nb_max_steps 50000 --nb_iters 500
+> γ is probably too low: seems to work better, but still doesn't go beyond the first hop
+
+--> γ: 0.9 -> 0.99 | λ: 0.8 -> 0.95 | lr: 1e-3 -> 3e-4 | critic_lr: lr * 5 | batch_size: 100 -> 512*8 | nb_epochs: 20 -> 10

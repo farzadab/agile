@@ -19,13 +19,15 @@ class PPO(object):
             eps=0.2,
             init_lr=0.001,
             annealing_rate=0.99,
-            gamma=0.9,
-            gae_lambda=0.8,
+            gamma=0.99,
+            gae_lambda=0.95,
             exploration_noise=-1,
             running_norm=False,
             anneal_eps=True,
             writer=None, render=False):
         '''
+        Implements the Proximal Policy Optimization algorithm (PPO)
+
         @param env: the environment (Gym env)
         @param hidden_layer_size: size of each hidden layer to be used in actor and critic networks
         @param nb_layers: number of hidden layers to use for actor
@@ -78,13 +80,17 @@ class PPO(object):
         self.norm_rew = Stats(1, shift_mean=False, scale=True, clip=False)
 
     def init_optims(self):
-        self.actor_optim = th.optim.Adam(self.actor.net.parameters(), lr=self.init_lr)
-        self.critic_optim = th.optim.Adam(self.critic.parameters(), lr=self.init_lr)
+        self.actor_optim = th.optim.Adam(
+            self.actor.net.parameters(), lr=self.init_lr,
+            betas=(0.95, 0.999), eps=1e-06)
+        self.critic_optim = th.optim.Adam(
+            self.critic.parameters(), lr=self.init_lr * 5,
+            betas=(0.95, 0.999), eps=1e-06)
         
         self.scheduler = MultiOptimScheduler(
             th.optim.lr_scheduler.LambdaLR,
             [self.actor_optim, self.critic_optim],
-            lr_lambda=lambda epoch: self.annealing_rate ** epoch
+            lr_lambda=lambda epoch: self.annealing_rate ** epoch  # exponential decay
         )
     
     def _value_function(self, s):
@@ -93,10 +99,11 @@ class PPO(object):
         '''
         return float(self.critic(th.FloatTensor(s)))
 
-    def train(self, nb_iters, nb_max_steps, nb_updates, batch_size):
+    def train(self, nb_iters, batch_size, nb_epochs, mini_batch_size):
 
         for i_iter in range(nb_iters):
             print('\rIteration: %d' % (i_iter+1), end='')
+            self.writer.set_epoch(i_iter)
 
             if i_iter > nb_iters / 2:
                 self.running_norm = False
@@ -107,24 +114,17 @@ class PPO(object):
 
             mem = ReplayMemory(gamma=self.gamma, gae_lambda=self.gae_lambda)
 
-            # TODO: for GAE and TD(lambda) may need to assume that mem stores a single episode
-            # and requires all the observations to be added sequentially and in order
             # TODO: fix name
-            self.sample_episode(nb_max_steps, mem, i_iter)
-
-            old_actor = self.actor.make_copy()
+            self.sample_episode(batch_size, mem)
 
             mem.to_tensor()
             mem['adv'] = (mem['adv'] - mem['adv'].mean()) / mem['adv'].std()
+
+            old_actor = self.actor.make_copy()
             self.scheduler.step()
-            for _ in range(nb_updates):
-                # batch = mem.sample(batch_size)
-
-                # TODO: better logger
-
-                self.update_critic(mem, batch_size)
-
-                self.update_actor(mem, old_actor, batch_size)
+            for _ in range(nb_epochs):
+                self.update_critic(mem, mini_batch_size)
+                self.update_actor(mem, old_actor, mini_batch_size)
 
             if callable(getattr(self.env, 'visualize_solution', None)):
                 self.env.visualize_solution(
@@ -170,10 +170,10 @@ class PPO(object):
             state = state_p
             
 
-    def sample_episode(self, nb_min_steps, mem, i_episode):
+    def sample_episode(self, batch_size, mem):
         '''
         Samples a certain number of steps from the environment. Always resets at the start.
-        TODO fix name: doesn't just sample a single episode, it sample `nb_min_steps` steps now!
+        TODO fix name: doesn't just sample a single episode, it sample `batch_size` steps now!
         TODO fix outputs: I'm currently outputing multiple values for logging, but it's not the correct way to do it
         '''
         # maybe use an env wrapper?
@@ -198,15 +198,17 @@ class PPO(object):
                 if self.running_norm:
                     self.norm_state.observe(_state)
 
-                if i_step > nb_min_steps:
+                if i_step > batch_size:
                     break
 
+            # TODO: use a callback here instead
             if self.render:# and i_step % 100 == 0:
                 self.env.render(mode='human')
+                import time
+                time.sleep(0.01)
 
             act = self.actor.get_action(th.FloatTensor(nstate), explore=True).detach().numpy()
-            import time
-            # time.sleep(0.01)
+            
             acts.append(act)
 
             _state_p, _rew, done, _ = self.env.step(act)
@@ -225,10 +227,11 @@ class PPO(object):
             _state = _state_p
         
         if self.writer:
-            self.writer.add_scalar('Train/AvgReward', float(total_rew) / (i_step+1), i_episode)
-            self.writer.add_scalar('Train/AvgReturn', np.mean(returns), i_episode)
-            self.writer.add_scalar('Extra/Action/Avg', float(np.array(acts).mean()), i_episode)
-            self.writer.add_scalar('Extra/Action/Std', float(np.array(acts).std()), i_episode)
+            self.writer.add_scalar('Train/AvgReward', float(total_rew) / (i_step+1))
+            self.writer.add_scalar('Train/AvgReturn', np.mean(returns))
+            self.writer.add_scalar('Extra/AvgEpsLen', len(acts) / len(returns))
+            self.writer.add_scalar('Extra/Action/Avg', float(np.array(acts).mean()))
+            self.writer.add_scalar('Extra/Action/Std', float(np.array(acts).std()))
     
 
     def update_critic(self, mem, batch_size):
@@ -394,11 +397,11 @@ class ReplayMemory(Data):
         super().add_point(s, a, r, ns, 0, 0, 0, 0)
 
     def calc_episode_targets(self, vfunc):
-        # TODO: compute TD(λ)
         if self.size() == 0:
             return
         crew = 0
         adv = 0
+        # TODO fix: this is wrong, either set to 0 or just use it when the agent is still alive ...
         vpred = 0#vfunc(self['nstate'][-1])
         episode_return = 0
         for i in range(self.size()-1, self.episode_start_index-1, -1):

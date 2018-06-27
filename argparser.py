@@ -81,9 +81,9 @@ _DEFAULT_ARGS = {
         'type': int,
         'help': 'Number of max steps to run for a single iteration of the algorithm',
     },
-    'nb_updates': {
+    'nb_epochs': {
         'type': int,
-        'help': 'Number of optimizer updates at each iteration',
+        'help': 'Number of optimizer epochs at each iteration',
     },
     'net_layer_size': {
         'type': int,
@@ -101,19 +101,20 @@ _DEFAULT_ARGS = {
         'type': int,
         'help': 'Timelimit for the environment',
     },
-    'batch_size': {
+    'mini_batch_size': {
         'type': int,
-        'default': 512,
-        'help': 'The size of the batch at each optimization step',
+        'help': 'The size of the mini-batches at each optimization step',
+    },
+    'step_size': {
+        'type': float,
+        'help': 'The (initial) learning rate for the optimizer',
     },
     'gamma': {
         'type': float,
-        'default': 0.9,
         'help': 'The discount factor of the reward γλ',
     },
     'gae_lambda': {
         'type': float,
-        'default': 0.9,
         'help': 'The λ parameter used in TD(λ) and GAE(λ)',
     },
     'noise': {

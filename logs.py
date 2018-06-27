@@ -106,6 +106,9 @@ class AverageWriter(object):
         if name not in self.dict:
             self.dict[name] = []
         self.dict[name].append(value)
+    def add_image(self, name, value, epoch):
+        if hasattr(self.writer, 'add_image'):
+            self.writer.add_image(name, value, epoch)
     # def get_writer(self):
     #     return self.writer.get_writer
     def get_logdir(self):

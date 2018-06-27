@@ -10,6 +10,7 @@ def get_args():
         replay_path='',  # if specified, will not train and only replays the learned policy
         store=True,
         render=False,
+        load_path='',
 
         env='PointMass',
         env_reward_style='velocity',
@@ -20,14 +21,17 @@ def get_args():
         net_nb_layers=0,
         net_nb_critic_layers=2,
 
-        load_path='',
-        gamma=0.9,
-        gae_lambda=0.8,
-        noise=-1,
+        step_size=0.0003,
+
+        gamma=0.99,
+        gae_lambda=0.95,
+        noise=-1,  # TODO: anneal noise: LinearAnneal(-0.7, -1.6)
+
         nb_iters=400,
-        nb_max_steps=1000,
-        nb_updates=20,
-        batch_size=512,
+        nb_epochs=10,
+        mini_batch_size=512,
+        batch_size=512*8,
+
         normalization_steps=1000,
         running_norm=True,
     ).parse()
@@ -55,6 +59,7 @@ def main():
         env, gamma=args.gamma, gae_lambda=args.gae_lambda,
         running_norm=args.running_norm,
         exploration_noise=args.noise,
+        init_lr=args.step_size,
         hidden_layer_size=args.net_layer_size,
         nb_layers=args.net_nb_layers, nb_critic_layers=args.net_nb_critic_layers,
         writer=writer,
@@ -64,8 +69,8 @@ def main():
     if args.replay_path:
         try:
             env.render(mode='human')
-        except:
-            pass
+        except Exception as err:
+            print('Exception:', err)
         replay(args, env, ppo)
     else:
         train(args, env, ppo, logm)
@@ -97,17 +102,15 @@ def train(args, env, ppo, logm=None):
     try:
         ppo.train(
             nb_iters=args.nb_iters,
-            nb_max_steps=args.nb_max_steps,
-            nb_updates=args.nb_updates,
-            batch_size=args.batch_size)
+            batch_size=args.batch_size,
+            nb_epochs=args.nb_epochs,
+            mini_batch_size=args.mini_batch_size)
     finally:
         env.close()
 
 
 def replay(args, env, ppo):
     from algorithms.PPO import ReplayMemory
-    import json
-    import torch as th
 
     # args.env_max_steps *= 2
     try:
@@ -121,12 +124,11 @@ def replay(args, env, ppo):
 
         ppo.actor.log_std[0] = -20  # simple hack to decrease the exploration level
 
-        mem = ReplayMemory(gamma=args.gamma, gae_lambda=0.9)
-        ppo.sample_episode(args.nb_max_steps, mem, 0)
+        mem = ReplayMemory(gamma=args.gamma, gae_lambda=0)
+        ppo.sample_episode(args.nb_max_steps, mem)
     finally:
         env.close()
 
 
 if __name__ == '__main__':
     main()
-
