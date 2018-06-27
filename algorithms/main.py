@@ -62,6 +62,10 @@ def main():
     )
 
     if args.replay_path:
+        try:
+            env.render(mode='human')
+        except:
+            pass
         replay(args, env, ppo)
     else:
         train(args, env, ppo, logm)

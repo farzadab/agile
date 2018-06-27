@@ -8,7 +8,7 @@ import pybullet_envs
 from algorithms.plot import ScatterPlot, QuiverPlot, Plot
 
 
-class PointMass(gym.Env, rllabEnv):
+class PointMass(gym.Env):
     '''
     Just a simple 2D PointMass with a jet, trying to go towards a goal location
     '''
@@ -51,8 +51,8 @@ class PointMass(gym.Env, rllabEnv):
         high_action = self.max_torque * np.ones(self.act_size)
         self.action_space = gym.spaces.Box(low=-high_action, high=high_action, dtype=np.float32)
 
-        high_position = np.concatenate([self.max_position * np.ones(4), self.max_speed * np.ones(2)])
-        self.observation_space = gym.spaces.Box(low=-high_position, high=high_position, dtype=np.float32)
+        self.obs_high = np.concatenate([self.max_position * np.ones(4), self.max_speed * np.ones(2)])
+        self.observation_space = gym.spaces.Box(low=-self.obs_high, high=self.obs_high, dtype=np.float32)
 
         self.seed()
         if reset:
@@ -116,7 +116,7 @@ class PointMass(gym.Env, rllabEnv):
         return p, v
 
     def reset(self):
-        high = self.observation_space.high
+        high = self.obs_high
         self.state = self.np_random.uniform(low=-high, high=high)
         if np.linalg.norm(self.state[-2:]) > self.max_speed:
             self.state[-2:] = self.state[-2:] / np.linalg.norm(self.state[-2:]) * self.max_speed
@@ -194,7 +194,7 @@ class PointMass(gym.Env, rllabEnv):
         v = np.ones(points.shape[0])
         d = np.ones((points.shape[0], 2))
         for i, p in enumerate(points):
-            state = np.concatenate([p, [0,0,0,0]])
+            state = np.concatenate([p, [0] * (self.observation_space.shape[0] - 2)])
             if value_func is not None:
                 v[i] = value_func(state)
             if policy is not None:
@@ -272,9 +272,10 @@ class CircularPointMassSAG(CircularPointMass):
 
 class CircularPhaseSAG(CircularPointMass):
     def __init__(self, *args, **kwargs):
-        super().__init__(start_at_goal=True, *args, **kwargs)
+        self.phase = 0
         self.parent_indices = [0,1,4,5]
-        high = np.concatenate([self.observation_space.high[self.parent_indices], np.pi])
+        super().__init__(start_at_goal=True, *args, **kwargs)
+        high = np.concatenate([self.observation_space.high[self.parent_indices], [np.pi]])
         self.observation_space = gym.spaces.Box(-high, high, dtype=np.float32)
 
     def _get_obs(self):
