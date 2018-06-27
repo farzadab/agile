@@ -204,5 +204,5 @@ Jun26_13-25-43: python3 -m algorithms.main --env 'MountainCarContinuous-v0' --ne
 Jun26_14-43-12: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_layer_size 32 --net_nb_layers 1 --net_nb_critic_layers 2 --nb_max_steps 20000 --desc 'Hopper\!'
 
 
-## 26/06/2018 - Commit ...
+## 26/06/2018 - Commit b1d4040560dcc7ae9bc2f027ac1918fd6418030a
 +++ better logging + logs return

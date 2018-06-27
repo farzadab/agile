@@ -3,11 +3,12 @@ from gym.utils import seeding
 import numpy as np
 import os.path as path
 import gym
+import pybullet_envs
 
 from algorithms.plot import ScatterPlot, QuiverPlot, Plot
 
 
-class PointMass(gym.Env):
+class PointMass(gym.Env, rllabEnv):
     '''
     Just a simple 2D PointMass with a jet, trying to go towards a goal location
     '''
@@ -56,7 +57,16 @@ class PointMass(gym.Env):
         self.seed()
         if reset:
             self.reset()
-        
+    
+    # @property
+    # def observation_space(self):
+    #     high_position = np.concatenate([self.max_position * np.ones(4), self.max_speed * np.ones(2)])
+    #     return gym.spaces.Box(low=-high_position, high=high_position, dtype=np.float32)
+
+    # @property
+    # def action_space(self):
+    #     high_action = self.max_torque * np.ones(self.act_size)
+    #     return gym.spaces.Box(low=-high_action, high=high_action, dtype=np.float32)
     
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -241,7 +251,7 @@ class CircularPointMass(PointMass):
         super().reset()
         self.phase = 0
         if self.randomize_goal:
-            self.phase = self.np_random.uniform(0, 2*np.pi)
+            self.phase = self.np_random.uniform(-np.pi, np.pi)
         self._set_goal_pos()
         if self.start_at_goal:
             self.state[0:2] = self.state[2:4]
@@ -260,6 +270,20 @@ class CircularPointMassSAG(CircularPointMass):
     def __init__(self, *args, **kwargs):
         super().__init__(start_at_goal=True, *args, **kwargs)
 
+class CircularPhaseSAG(CircularPointMass):
+    def __init__(self, *args, **kwargs):
+        super().__init__(start_at_goal=True, *args, **kwargs)
+        self.parent_indices = [0,1,4,5]
+        high = np.concatenate([self.observation_space.high[self.parent_indices], np.pi])
+        self.observation_space = gym.spaces.Box(-high, high, dtype=np.float32)
+
+    def _get_obs(self):
+        while self.phase > np.pi:
+            self.phase -= 2*np.pi
+        while self.phase < -np.pi:
+            self.phase += 2*np.pi
+        return np.concatenate([self.state[self.parent_indices], [self.phase]])
+
 
 _ENV_MAP = dict(
     PointMass=PointMass, PM=PointMass,
@@ -267,6 +291,7 @@ _ENV_MAP = dict(
     NSPM=NStepPointMass,
     CircularPointMass=CircularPointMass, CPM=CircularPointMass,
     CircularPointSAG=CircularPointMassSAG, CPSAG=CircularPointMassSAG,
+    CircularPhaseSAG=CircularPhaseSAG, CPhase=CircularPhaseSAG,
 )
 
 def get_env(name, *args, **kwargs):
