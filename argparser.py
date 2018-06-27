@@ -116,6 +116,10 @@ _DEFAULT_ARGS = {
         'default': 0.9,
         'help': 'The λ parameter used in TD(λ) and GAE(λ)',
     },
+    'noise': {
+        'type': float,
+        'help': 'The amount of noise: the stdev (σ) of the gaussian policy or ϵ in ϵ-greedy',
+    },
     'replay_path': {
         'help': 'If specified, the code will not train and will only replay the saved policy',
     },

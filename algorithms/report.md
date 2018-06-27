@@ -193,3 +193,16 @@ Jun26_12-52-28: python3 -m algorithms.main --env CPSAG --env_reward_style 'dists
 > great! almost perfect after 40 iterations
 Jun26_12-57-49: python3 -m algorithms.main --env CPSAG --env_reward_style 'distsq' --nb_max_steps 1000 --desc 'how much does the # steps matter?'
 > still works well enough after 40 iterations. maybe this env is too easy?
+
+
+## 26/06/2018 - Commit 6824bd5fb9f8e75ec8db84eb210ade43d1d5b53f
+> try stuff on Gym envs
+Jun26_13-32-50: python3 -m algorithms.main --env 'Pendulum-v0' --net_nb_layers 1 --nb_max_steps 5000
+> Pendulum works great after 120 * 5000 episodes
+Jun26_13-25-43: python3 -m algorithms.main --env 'MountainCarContinuous-v0' --net_nb_layers 1 --nb_max_steps 5000
+> doesn't work ... maybe increasing noise will help ...
+Jun26_14-43-12: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_layer_size 32 --net_nb_layers 1 --net_nb_critic_layers 2 --nb_max_steps 20000 --desc 'Hopper\!'
+
+
+## 26/06/2018 - Commit ...
++++ better logging + logs return

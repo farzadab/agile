@@ -1,4 +1,5 @@
 import tensorboardX
+import numpy as np
 import logging
 import pygit2
 import termcolor
@@ -26,7 +27,7 @@ logger.addHandler(ch)
 
 class LogMaster(object):
     def __init__(self, args):
-        self.writer = self.log_dir = None
+        self.log_dir = None
         self.args = args
         if args.store:
             ## prompt the user to provide a desciption
@@ -36,11 +37,14 @@ class LogMaster(object):
                     'red'
                 ))
                 args.desc = input()
-            
-            args.desc = args.desc
+            writer = tensorboardX.SummaryWriter()
+        else:
+            writer = ConsoleWriter()
 
-            self.writer = tensorboardX.SummaryWriter()
-            self.log_dir = self.writer.file_writer.get_logdir()
+        self.writer = AverageWriter(writer)
+        self.log_dir = self.writer.get_logdir()
+
+        if self.log_dir is not None:
             print(termcolor.colored('### Logging to `%s`' % self.log_dir, 'green'))
     
     def get_writer(self):
@@ -66,3 +70,46 @@ class LogMaster(object):
             
             if extras is not None:
                 json_dump(extras, os.path.join(self.log_dir, 'extras.json'))
+
+
+class ConsoleWriter(object):
+    def __init__(self):
+        self.epoch = -1
+        self.file_writer = self  # just so that the command `writer.file_writer.get_logdir()` works
+    def add_scalar(self, name, value, epoch):
+        if self.epoch != epoch:
+            print(
+                '============ Iter %d =============' % epoch
+            )
+        self.epoch = epoch
+        print('|{:20s}|{:10.4f}|'.format(name, value))
+    def get_logdir(self):
+        return None
+
+
+class AverageWriter(object):
+    def __init__(self, writer):
+        self.epoch = 0
+        self.writer = writer
+        self.dict = {}
+    def write_values(self):
+        for k in sorted(self.dict.keys()):
+            self.writer.add_scalar(k, np.mean(self.dict[k]), self.epoch)
+        self.dict.clear()
+    def set_epoch(self, epoch):
+        if self.epoch != epoch:
+            self.write_values()
+        self.epoch = epoch
+    def add_scalar(self, name, value, epoch=None):
+        if epoch is not None:
+            self.set_epoch(epoch)
+        if name not in self.dict:
+            self.dict[name] = []
+        self.dict[name].append(value)
+    # def get_writer(self):
+    #     return self.writer.get_writer
+    def get_logdir(self):
+        return self.writer.file_writer.get_logdir()
+    def flush(self):
+        self.write_values()
+

@@ -1,7 +1,7 @@
 from algorithms.PPO import PPO
 from algorithms.senv import get_env
 from argparser import Args
-from logs import LogMaster
+from logs import LogMaster, ConsoleWriter, AverageWriter
 
 def get_args():
     return Args(
@@ -23,6 +23,7 @@ def get_args():
         load_path='',
         gamma=0.9,
         gae_lambda=0.8,
+        noise=-1,
         nb_iters=400,
         nb_max_steps=1000,
         nb_updates=20,
@@ -36,9 +37,11 @@ def main():
     args = get_args()
 
     writer = None
-    if args.store and not bool(args.replay_path):
-        logm = LogMaster(args)
-        writer = logm.get_writer()
+    if args.replay_path:
+        args.store = False
+
+    logm = LogMaster(args)
+    writer = logm.get_writer()
 
     env = get_env(
         name=args.env,
@@ -51,6 +54,7 @@ def main():
     ppo = PPO(
         env, gamma=args.gamma, gae_lambda=args.gae_lambda,
         running_norm=args.running_norm,
+        exploration_noise=args.noise,
         hidden_layer_size=args.net_layer_size,
         nb_layers=args.net_nb_layers, nb_critic_layers=args.net_nb_critic_layers,
         writer=writer,
@@ -61,6 +65,9 @@ def main():
         replay(args, env, ppo)
     else:
         train(args, env, ppo, logm)
+
+    if writer is not None:
+        writer.flush()
 
 
 def train(args, env, ppo, logm=None):

@@ -1,23 +1,39 @@
 TODO PPO:
-    alg improvements:
-        ✔ normalization (states/reward) @started(18-06-14 11:57) @done(18-06-14 14:49) @lasted(2h52m39s)
-            ✔ running average @done(18-06-14 14:49)
-                ✔ try naive normalization as well and run an experiment @started(18-06-14 11:57) @done(18-06-14 14:49) @lasted(2h52m41s)
-                normalization of reward should help with TD estimates
-                ☐ do running average but stop at some point?
-                ☐ read the literature to see how people do this
-                    Deep RL that matters (https://arxiv.org/pdf/1709.06560.pdf) uses running mean
-                    John Schulman also recommends doing so: x = clip( (x-mu) / std, -10, 10)
-                    ☐ don't shift mean reward!!!! @critical
-            ☐ not sure if I need it for actions or not (Glen says no): but maybe important
-        ✔ more episodes per iteration @started(18-06-14 11:57) @done(18-06-14 14:49) @lasted(2h52m53s)
-            ✔ fix ReplayMemory @critical @done(18-06-14 14:49)
-        ☐ use TD estimates
-            ☐ TD(1)
-            ☐ TD(lambda)
-    
-    ☐ add layer sizes to Args
+    advantage:
+        ☐ last episode: use v(s_last) if not dead yet @high
+            need to check timelimit to see if it is reached
+            
     ☐ normalize actions
+
+    roadmap Michiel:
+        ☐ multiprocessing @medium
+        ☐ ask Glen about
+        ☐ PointMass to follow circle/trajectory based on phase alone
+        ☐ PointMass to follow impossible look-ahead trajectory
+
+    experiments:
+        ☐ validation criteria: reached as extra dict?
+        ☐ register environments
+        ☐ v^2 reward: use square of the inwards velocity
+    new env:
+        ☐ experiment with the effect of using phase
+
+    technical:
+        ☐ experiment: start from the same state?
+        ☐ better logging system
+        ☐ state object?
+
+    doc:
+        ☐ write up results in Github or wiki (which one?)
+
+    parallelism: @medium
+        ☐ check to see if you can improve the policy update in Zhaoming's code (read https://arxiv.org/abs/1707.02286)
+
+        ☐ take a look at RL-Lab's implementation
+
+    high-level:
+        ☐ re-implement DeepMimic
+                ☐ complete wiki
 
     nots and bolts:
         brutsekas textbook ...?
@@ -34,7 +50,6 @@ TODO PPO:
         
         initialization:
             ☐ really important
-            ☐ zero or tiny final layer, to maximize entropy
         ☐ diagnostics:
             ☐ norms of gradients
             policy gradients:
@@ -42,58 +57,15 @@ TODO PPO:
                 ☐ explained variance should be greater than zero : (1 - var(E[return] - predicted value)) / var(E[return])
         hyperparameters:
             ☐ uniform sampling + regression later!
-    
-    experiments:
-        ✔ not using running_norm for distsq @done(18-06-20 14:43): doesn't seem to make a difference
-        ☐ try multiple steps with the same action
-        ✔ non-linear actor for distsq @done(18-06-20 14:43): may work if more iterations are done
-        ✔ increase size of critic @done(18-06-20 14:43): seems like the critic loss is better, but not the performance
-        ✔ add 1/2 * u^2 to p @done(18-06-19 17:13)
-            ☐ experiment with it: doesn't seem to work too well
-        ✔ add images to tensorboard @done(18-06-18 11:50)
-        ✔ better setup for running experiments @started(18-06-18 12:08) @done(18-06-18 13:23) @lasted(1h15m24s)
-            ☐ validation criteria: reached as extra dict?
-            ☐ register environments
-        ☐ longer control step: do the same action 5-10 times
-        ☐ v^2 reward: use square of the inwards velocity
-        ☐ try negative distance squared again (without the bonus at the end)
-        new env:
-            ✔ moving target: circle @done(18-06-18 13:52)
-                ☐ experiment with the effect of using phase
-    
-    technical:
-        ✔ refactor the visualization part of the code @started(18-06-13 19:40) @done(18-06-14 14:49) @lasted(19h9m35s)
-        ☐ experiment: start from the same state?
-        ☐ better logging system
-        ✔ store policy/value function @done(18-06-18 17:24)
-            ✔ replay for policy @done(18-06-18 18:23)
-        ☐ state object?
-
-    doc:
-        ☐ write up results in Github or wiki (which one?)
-    
-    parallelism:
-        ☐ check to see if you can improve the policy update in Zhaoming's code (read https://arxiv.org/abs/1707.02286)
-
-    ✔ implement PPO @done(18-06-13 19:40)
-        ✔ read the paper! @done(18-06-08 10:32)
-            ✔ ask Zhaoming if the gradient is always zero when min is clip @done(18-06-08 10:32): yes, he says
-        ✔ implement a basic high-level architecture @done(18-06-11 12:33)
-        ✔ take a look at Zhaoming's implementation @done(18-06-11 18:34)
-        ☐ take a look at RL-Lab's implementation
-        ✔ create simple environment @done(18-06-11 18:35): created PointMass env
-        ✔ debug code @done(18-06-13 19:27)
-    
-    high-level:
-        ☐ re-implement DeepMimic
-            ✔ read the paper! @started(18-06-07 10:25) @done(18-06-07 14:00) @lasted(3h35m40s)
-                ☐ complete wiki
 
 Papers:
-    ✔ Deepmimic https://arxiv.org/pdf/1804.02717.pdf @done(18-06-07 15:18)
-    ☐ Proximal Policy Optimization (PPO) https://arxiv.org/pdf/1707.06347.pdf
     ☐ backpropagation through the void https://arxiv.org/pdf/1711.00123
-    ☐ Generative advantage estimation (GAE) https://arxiv.org/pdf/1506.02438.pdf
+    ☐ Robust task-based control policies http://www.cs.ubc.ca/~van/papers/2009-TOG-taskControl/2009-TOG-taskControl.pdf
+    ☐ World Models https://arxiv.org/pdf/1803.10122.pdf
+    ☐ Bayesian Optimization Using Domain Knowledge on the ATRIAS biped https://arxiv.org/pdf/1709.06047.pdf
+    ☐ Back to Basics: Benchmarking Canonical Evolution Strategies for Playing Atari https://arxiv.org/abs/1802.08842
+    ☐ Basic Instincts http://science.sciencemag.org/content/360/6391/845/tab-pdf
+    ☐ One parameter is always enough https://colala.bcs.rochester.edu/papers/piantadosi2018one.pdf
 
 TODO OLD:
     ☐ get good motions
@@ -103,46 +75,80 @@ TODO OLD:
     ☐ fitted value iteration: http://www.cs.ubc.ca/~van/papers/2009-TOG-taskControl/index.html
 
     ☐ simple periodic PD controls
-    ✔ evaluate dynamics on longer horizons ... ? @started(18-06-06 10:57) @done(18-06-08 10:32) @lasted(1d23h35m17s)
     ☐ send Michiel the specs of computer
         GeForce GTX 285 (Last Price Change: 2011-06-23cpu $179.99 USD)
         Intel Core i5 750 (found an article from September 06, 2010)
-    ✔ ask Zhaoming about the MuJoCo error @done(18-06-05 11:13): had no idea
-      >>> import gym, mujoco_py
-      >>> gym.make('HalfCheetahEnv-v2')
-      >>> gym.make('HalfCheetah-v2')
-      [1]    31083 illegal hardware instruction (core dumped)  python
-
 
     ☐ experiment with half-cheetah
-    ✔ check pytorch optimization issues @critical @done(18-06-01 18:07)
-        ✔ is it converging? @done(18-06-01 18:07)
-        ✔ normalization @started(18-05-31 17:34) @done(18-06-01 18:07) @lasted(1d33m1s)
-        ✔ correct optimization algorithm and batch size @started(18-05-31 17:34) @done(18-06-01 18:07) @lasted(1d33m2s)
-            ✔ hyper-parameters @started(18-06-01 18:07) @done(18-06-04 12:58) @lasted(2d18h51m45s)
-            ✔ checkout results and make more experiments @done(18-06-04 12:58)
     ☐ check the model for torque limits/mass/....
     ☐ start with a simpler model: no feet @almost
         ☐ or perhaps the model with compliant feet @almost
-    ✔ add PD controller: is it going to help or not? @done(18-05-30 13:44)
-    ✔ use vx for cost @done(18-05-30 15:03)
         ☐ check if cost function is working or not
     ☐ gotta get rid of "done" from the env and develop my own
         - just use timelimit for now?
-    ✔ checkout cost function code from baseline paper: https://github.com/nagaban2/nn_dynamics/blob/master/reward_functions.py @done(18-06-04 12:51)
-        - both this one and the homework code uses forward torso x vel + 0.05*action^2 @done(18-06-04 12:53)
-        - homework code also adds some hand-engineered costs (penalizes bad configs of legs) @done(18-06-04 12:54)
     ☐ drive simple motions: fix some joints and experiment with the rest (e.g. sinosuid)
     ☐ faster MPC with multiple rollout @speed
 
 Relevant:
     ☐ active learning?
 
-Papers:
-    ☐ Robust task-based control policies http://www.cs.ubc.ca/~van/papers/2009-TOG-taskControl/2009-TOG-taskControl.pdf
-    ✔ DeepRL in a Handful of Trials using Probabilistic Dynamics https://arxiv.org/pdf/1805.12114.pdf @started(18-05-31 17:34) @done(18-06-05 19:19) @lasted(5d1h45m1s)
-    ☐ World Models https://arxiv.org/pdf/1803.10122.pdf
-    ☐ Bayesian Optimization Using Domain Knowledge on the ATRIAS biped https://arxiv.org/pdf/1709.06047.pdf
-    ☐ Back to Basics: Benchmarking Canonical Evolution Strategies for Playing Atari https://arxiv.org/abs/1802.08842
-    ☐ Basic Instincts http://science.sciencemag.org/content/360/6391/845/tab-pdf
-    ☐ One parameter is always enough https://colala.bcs.rochester.edu/papers/piantadosi2018one.pdf
+Archive:
+  ✔ Proximal Policy Optimization (PPO) https://arxiv.org/pdf/1707.06347.pdf @done(18-06-26 16:17) @project(Papers)
+  ✔ Generative advantage estimation (GAE) https://arxiv.org/pdf/1506.02438.pdf @done(18-06-26 16:17) @project(Papers)
+  ✔ read the literature to see how people do this @done(18-06-26 15:48) @project(TODO PPO.alg improvements)
+  ✔ evaluate dynamics on longer horizons ... ? @started(18-06-06 10:57) @done(18-06-08 10:32) @lasted(1d23h35m17s) @project(TODO OLD)
+    Deep RL that matters (https://arxiv.org/pdf/1709.06560.pdf) uses running mean
+  ✔ ask Zhaoming about the MuJoCo error @done(18-06-05 11:13): had no idea @project(TODO OLD)
+    >>> import gym, mujoco_py
+    >>> gym.make('HalfCheetahEnv-v2')
+    >>> gym.make('HalfCheetah-v2')
+    [1]    31083 illegal hardware instruction (core dumped)  python
+    John Schulman also recommends doing so: x = clip( (x-mu) / std, -10, 10)
+  ✔ check pytorch optimization issues @critical @done(18-06-01 18:07) @project(TODO OLD)
+  ✔ is it converging? @done(18-06-01 18:07) @project(TODO OLD)
+  ✔ normalization @started(18-05-31 17:34) @done(18-06-01 18:07) @lasted(1d33m1s) @project(TODO OLD)
+  ✔ correct optimization algorithm and batch size @started(18-05-31 17:34) @done(18-06-01 18:07) @lasted(1d33m2s) @project(TODO OLD)
+  ✔ hyper-parameters @started(18-06-01 18:07) @done(18-06-04 12:58) @lasted(2d18h51m45s) @project(TODO OLD)
+  ✔ checkout results and make more experiments @done(18-06-04 12:58) @project(TODO OLD)
+  ✔ don't shift mean reward!!!! @critical @done(18-06-26 15:48) @project(TODO PPO.alg improvements)
+  ✔ add PD controller: is it going to help or not? @done(18-05-30 13:44) @project(TODO OLD)
+  ✔ use vx for cost @done(18-05-30 15:03) @project(TODO OLD)
+  ✔ checkout cost function code from baseline paper: https://github.com/nagaban2/nn_dynamics/blob/master/reward_functions.py @done(18-06-04 12:51) @project(TODO OLD)
+  - both this one and the homework code uses forward torso x vel + 0.05*action^2 @done(18-06-04 12:53) @project(TODO OLD)
+  - homework code also adds some hand-engineered costs (penalizes bad configs of legs) @done(18-06-04 12:54) @project(TODO OLD)
+  ✔ not sure if I need it for actions or not (Glen says no): but maybe important @done(18-06-26 15:48) @project(TODO PPO.alg improvements)
+  ✔ DeepRL in a Handful of Trials using Probabilistic Dynamics https://arxiv.org/pdf/1805.12114.pdf @started(18-05-31 17:34) @done(18-06-05 19:19) @lasted(5d1h45m1s) @project(Papers)
+  ✔ more episodes per iteration @started(18-06-14 11:57) @done(18-06-14 14:49) @lasted(2h52m53s) @project(TODO PPO.alg improvements)
+  ✔ fix ReplayMemory @critical @done(18-06-14 14:49) @project(TODO PPO.alg improvements)
+  ✔ use TD estimates @done(18-06-26 15:47) @project(TODO PPO.alg improvements)
+  ✔ TD(1) @done(18-06-26 15:47) @project(TODO PPO.alg improvements)
+  ✔ TD(lambda) @done(18-06-26 15:47) @project(TODO PPO.alg improvements)
+  ✔ add layer sizes to Args @done(18-06-26 15:47) @project(TODO PPO)
+  ✔ zero or tiny final layer, to maximize entropy @done(18-06-26 15:51) @project(TODO PPO.nots and bolts.initialization)
+  ✔ not using running_norm for distsq @done(18-06-20 14:43): doesn't seem to make a difference @project(TODO PPO.experiments)
+  ✔ normalization (states/reward) @started(18-06-14 11:57) @done(18-06-14 14:49) @lasted(2h52m39s) @project(TODO PPO.alg improvements)
+  ✔ try multiple steps with the same action @done(18-06-26 15:51): didn't work as well as I imagined it would @project(TODO PPO.experiments)
+  ✔ non-linear actor for distsq @done(18-06-20 14:43): may work if more iterations are done @project(TODO PPO.experiments)
+  ✔ increase size of critic @done(18-06-20 14:43): seems like the critic loss is better, but not the performance @project(TODO PPO.experiments)
+  ✔ add 1/2 * u^2 to p @done(18-06-19 17:13) @project(TODO PPO.experiments)
+  ✔ experiment with it: doesn't seem to work too well @done(18-06-26 15:51) @project(TODO PPO.experiments)
+  ✔ add images to tensorboard @done(18-06-18 11:50) @project(TODO PPO.experiments)
+  ✔ better setup for running experiments @started(18-06-18 12:08) @done(18-06-18 13:23) @lasted(1h15m24s) @project(TODO PPO.experiments)
+  ✔ longer control step: do the same action 5-10 times @done(18-06-26 15:52) @project(TODO PPO.experiments)
+  ✔ running average @done(18-06-14 14:49) @project(TODO PPO.alg improvements)
+  ✔ try negative distance squared again (without the bonus at the end) @done(18-06-26 15:52) @project(TODO PPO.experiments)
+  ✔ moving target: circle @done(18-06-18 13:52) @project(TODO PPO.experiments.new env)
+  ✔ refactor the visualization part of the code @started(18-06-13 19:40) @done(18-06-14 14:49) @lasted(19h9m35s) @project(TODO PPO.technical)
+  ✔ try naive normalization as well and run an experiment @started(18-06-14 11:57) @done(18-06-14 14:49) @lasted(2h52m41s) @project(TODO PPO.alg improvements)
+  ✔ store policy/value function @done(18-06-18 17:24) @project(TODO PPO.technical)
+  ✔ replay for policy @done(18-06-18 18:23) @project(TODO PPO.technical)
+  ✔ implement PPO @done(18-06-13 19:40) @project(TODO PPO)
+  ✔ read the paper! @done(18-06-08 10:32) @project(TODO PPO)
+  ✔ ask Zhaoming if the gradient is always zero when min is clip @done(18-06-08 10:32): yes, he says @project(TODO PPO)
+  ✔ implement a basic high-level architecture @done(18-06-11 12:33) @project(TODO PPO)
+  ✔ take a look at Zhaoming's implementation @done(18-06-11 18:34) @project(TODO PPO)
+  ✔ create simple environment @done(18-06-11 18:35): created PointMass env @project(TODO PPO)
+  ✔ debug code @done(18-06-13 19:27) @project(TODO PPO)
+  ✔ do running average but stop at some point? @done(18-06-26 15:48) @project(TODO PPO.alg improvements)
+  ✔ read the paper! @started(18-06-07 10:25) @done(18-06-07 14:00) @lasted(3h35m40s) @project(TODO PPO.high-level)
+  ✔ Deepmimic https://arxiv.org/pdf/1804.02717.pdf @done(18-06-07 15:18) @project(Papers)

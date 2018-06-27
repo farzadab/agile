@@ -21,6 +21,7 @@ class PPO(object):
             annealing_rate=0.99,
             gamma=0.9,
             gae_lambda=0.8,
+            exploration_noise=-1,
             running_norm=False,
             anneal_eps=True,
             writer=None, render=False):
@@ -36,6 +37,7 @@ class PPO(object):
         @param annealing_rate: rate by which the lr is annealed: lr = init_lr * annealing_rate ** epoch
         @param gamma: discount factor parameter (scalar)
         @param gae_lambda: the λ parameter in GAE(λ) (scalar)
+        @param exploration_noise: the amount of exploration noise (log σ) for the actor (scalar)
         @param running_norm: whether or not to use a running average for normalization
         @param anneal_eps: whether or not to anneal the clipping ϵ parameter over time
         @param writer: writer for logging training curves and images(tensorboardX.SummaryWriter)
@@ -54,13 +56,13 @@ class PPO(object):
         self.writer = writer
 
         self.save_path = None
-        if self.writer is not None:
-            self.save_path = os.path.join(self.writer.file_writer.get_logdir(), 'models')
+        if self.writer is not None and self.writer.get_logdir() is not None:
+            self.save_path = os.path.join(self.writer.get_logdir(), 'models')
 
         if nb_critic_layers is None:
             nb_critic_layers = nb_layers
 
-        self.actor = ActorNet(env, [hidden_layer_size] * nb_layers, log_std_noise=-1)
+        self.actor = ActorNet(env, [hidden_layer_size] * nb_layers, log_std_noise=exploration_noise)
 
         self.critic = make_net(
             [env.observation_space.shape[0]] +
@@ -111,11 +113,7 @@ class PPO(object):
             self.sample_episode(nb_max_steps, mem, i_iter)
 
             old_actor = self.actor.make_copy()
-            lc = 0
-            # la = 0
-            sum_v = 0
-            sum_vhat = 0
-            # sum_adv = 0
+
             mem.to_tensor()
             mem['adv'] = (mem['adv'] - mem['adv'].mean()) / mem['adv'].std()
             self.scheduler.step()
@@ -124,21 +122,9 @@ class PPO(object):
 
                 # TODO: better logger
 
-                lcn, v, vhat = self.update_critic(mem, batch_size)
-                lc += lcn
-                sum_v += v
-                sum_vhat += vhat
+                self.update_critic(mem, batch_size)
 
                 self.update_actor(mem, old_actor, batch_size)
-                # la += lan
-                # sum_adv += adv
-
-            if self.writer:
-                self.writer.add_scalar('Train/LossCritic', lc / nb_updates, i_iter)
-                # self.writer.add_scalar('Train/LossActor', la / nb_updates, i_iter)
-                self.writer.add_scalar('Extra/Value/Next', sum_v / nb_updates, i_iter)
-                self.writer.add_scalar('Extra/Value/Current', sum_vhat / nb_updates, i_iter)
-                # self.writer.add_scalar('Extra/Action/Adv', mem['adv'].mean(), i_iter)
 
             if callable(getattr(self.env, 'visualize_solution', None)):
                 self.env.visualize_solution(
@@ -147,6 +133,8 @@ class PPO(object):
                     i_iter=i_iter
                 )
 
+            self.save_models(self.save_path)  # always save the last model
+            
             # save the models. we do it 10 times in the whole training cycle
             if self._time_to_save(i_iter, nb_iters):
                 self.save_models(self.save_path, index=i_iter)
@@ -191,13 +179,16 @@ class PPO(object):
         # maybe use an env wrapper?
         total_rew = 0
         acts = []
+        returns = []
 
         done = True  # force reset
         # first = True
 
         for i_step in inf_range():
             if done:
-                mem.calc_episode_targets(self._value_function)
+                ret = mem.calc_episode_targets(self._value_function)
+                if ret is not None:
+                    returns.append(ret)
                 _state = self.env.reset()
                 nstate = self.norm_state.normalize(_state)
                 # if not first:
@@ -210,10 +201,12 @@ class PPO(object):
                 if i_step > nb_min_steps:
                     break
 
-            if self.render:
+            if self.render:# and i_step % 100 == 0:
                 self.env.render(mode='human')
 
             act = self.actor.get_action(th.FloatTensor(nstate), explore=True).detach().numpy()
+            import time
+            # time.sleep(0.01)
             acts.append(act)
 
             _state_p, _rew, done, _ = self.env.step(act)
@@ -231,20 +224,18 @@ class PPO(object):
             nstate = nstate_p
             _state = _state_p
         
-        # mem.calc_episode_rewards()
-        # print('')
-        
         if self.writer:
             self.writer.add_scalar('Train/AvgReward', float(total_rew) / (i_step+1), i_episode)
+            self.writer.add_scalar('Train/AvgReturn', np.mean(returns), i_episode)
             self.writer.add_scalar('Extra/Action/Avg', float(np.array(acts).mean()), i_episode)
             self.writer.add_scalar('Extra/Action/Std', float(np.array(acts).std()), i_episode)
     
 
     def update_critic(self, mem, batch_size):
         loss = 0
-        sum_v = 0
-        sum_vhat = 0
-        sum_loss = 0
+        mean_v = 0
+        mean_vhat = 0
+        mean_loss = 0
         criterion = th.nn.MSELoss()
         for batch in mem.iterate_once(batch_size):
             # mem.calculate_td(sample)
@@ -262,14 +253,18 @@ class PPO(object):
             self.critic_optim.step()
             # print('backed!')
 
-            sum_v += float(v.sum())
-            sum_vhat += float(vhat.sum())
-            sum_loss += float(loss.sum())
+            mean_v += float(v.sum()) / mem.size()
+            mean_vhat += float(vhat.sum()) / mem.size()
+            mean_loss += float(loss.sum()) / mem.size()
+        
+        self.writer.add_scalar('Train/LossCritic', mean_loss)
+        self.writer.add_scalar('Extra/Value/Target', mean_v)
+        self.writer.add_scalar('Extra/Value/Current', mean_vhat)
 
-        return sum_loss / mem.size(), sum_v / mem.size(), sum_vhat / mem.size()
+        return mean_loss
     
     def update_actor(self, mem, old_policy, batch_size):
-        total_loss = 0
+        mean_loss = 0
 
         eps = self.eps
         if self.anneal_eps:
@@ -286,11 +281,15 @@ class PPO(object):
             loss = -1 * losses.mean()  # we can only do gradient descent not **ascent**
             loss.backward()
             self.actor_optim.step()
-            total_loss += losses.sum()
+            mean_loss += float(losses.sum()) / mem.size()
+        
+        # self.writer.add_scalar('Train/LossActor', la / nb_updates, i_iter)
+        # self.writer.add_scalar('Extra/Action/Adv', mem['adv'].mean(), i_iter)
             
-        return float(loss) / mem.size()
+        return mean_loss
 
-    def save_models(self, path, index=''):
+    def save_models(self, path, index=None):
+        name = 'last' if index is None else str(index)
         os.makedirs(path, exist_ok=True)
         save_obj = dict(
             actor=self.actor.net.state_dict(),
@@ -298,7 +297,7 @@ class PPO(object):
             norm_rew=self.norm_rew,
             norm_state=self.norm_state
         )
-        th.save(save_obj, os.path.join(path, '%s-ppo.pt' % str(index)))
+        th.save(save_obj, os.path.join(path, '%s-ppo.pt' % name))
         # self.actor.save_model(os.path.join(path, '%s-actor.pt' % str(index)))
         # th.save(self.critic, os.path.join(path, '%s-critic.pt' % str(index)))
 
@@ -401,7 +400,9 @@ class ReplayMemory(Data):
         crew = 0
         adv = 0
         vpred = 0#vfunc(self['nstate'][-1])
+        episode_return = 0
         for i in range(self.size()-1, self.episode_start_index-1, -1):
+            episode_return += self['reward'][i]
             crew = self['reward'][i] + crew * self.gamma
             
             vnext = vpred
@@ -433,6 +434,7 @@ class ReplayMemory(Data):
         # print(th.FloatTensor(self['vtarg'])[-10:])
 
         self.episode_start_index = self.size()
+        return episode_return
         # if len(self.data):
         #     print('\nminmax')
         #     print(np.min([t.cr for t in self.data]))
