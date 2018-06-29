@@ -34,11 +34,14 @@ def main():
     actionSpace = env.action_space
     # env.setRandomSeed(1234)
     
-    print("observation_space: ", env.observation_space.low)
-    print("observation_space: ", env.observation_space.high)
-    print("Actions space max: ", len(env.action_space.high))
+    print("observation_space: ", env.observation_space.shape)
+    print("observation_space min: ", env.observation_space.low)
+    print("observation_space max: ", env.observation_space.high)
+    print("Actions space: ", env.action_space.shape)
     print("Actions space min: ", env.action_space.low)
     print("Actions space max: ", env.action_space.high)
+
+    time.sleep(2)
     
     env.reset()
     

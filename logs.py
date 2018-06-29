@@ -45,7 +45,7 @@ class LogMaster(object):
         self.log_dir = self.writer.get_logdir()
 
         if self.log_dir is not None:
-            print(termcolor.colored('### Logging to `%s`' % self.log_dir, 'green'))
+            logger.info(termcolor.colored('### Logging to `%s`' % self.log_dir, 'green'))
     
     def get_writer(self):
         return self.writer
@@ -78,11 +78,11 @@ class ConsoleWriter(object):
         self.file_writer = self  # just so that the command `writer.file_writer.get_logdir()` works
     def add_scalar(self, name, value, epoch):
         if self.epoch != epoch:
-            print(
+            logger.info(
                 '============ Iter %d =============' % epoch
             )
         self.epoch = epoch
-        print('|{:20s}|{:10.4f}|'.format(name, value))
+        logger.info('|{:20s}|{:10.4f}|'.format(name, value))
     def get_logdir(self):
         return None
 
@@ -92,6 +92,7 @@ class AverageWriter(object):
         self.epoch = 0
         self.writer = writer
         self.dict = {}
+        self.warned = False
     def write_values(self):
         for k in sorted(self.dict.keys()):
             self.writer.add_scalar(k, np.mean(self.dict[k]), self.epoch)
@@ -109,6 +110,10 @@ class AverageWriter(object):
     def add_image(self, name, value, epoch):
         if hasattr(self.writer, 'add_image'):
             self.writer.add_image(name, value, epoch)
+        elif not self.warned:
+            self.warned = True
+            logger.warn('The current writer doesn\'t support the `add_images` functionality')
+
     # def get_writer(self):
     #     return self.writer.get_writer
     def get_logdir(self):

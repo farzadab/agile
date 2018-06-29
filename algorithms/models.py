@@ -28,6 +28,9 @@ class ActorNet(object):
     def forward(self, X):
         return self.net.forward(X)
     
+    def set_noise(self, log_std):
+        self.log_std = th.FloatTensor([log_std])
+    
     def get_prob(self, action, state):
         norm_factor = 2 * pi * th.ones(action.shape[:-1])
         norm_factor = norm_factor.pow(action.shape[-1])

@@ -213,4 +213,27 @@ Jun26_18-36-26: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_laye
 Jun26_18-52-22: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_layer_size 32 --net_nb_layers 2 --net_nb_critic_layers 3 --nb_max_steps 50000 --nb_iters 500
 > γ is probably too low: seems to work better, but still doesn't go beyond the first hop
 
+## 27/06/2018 - Commit 48e5b3b70259b916a083054847b21230b60a8f69
+
 --> γ: 0.9 -> 0.99 | λ: 0.8 -> 0.95 | lr: 1e-3 -> 3e-4 | critic_lr: lr * 5 | batch_size: 100 -> 512*8 | nb_epochs: 20 -> 10
+
+Jun27_11-48-04: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_layer_size 32 --net_nb_layers 2 --net_nb_critic_layers 3
+> learns to stand still! maybe more exploration will help
+
+Jun27_12-22-35: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_layer_size 32 --net_nb_layers 2 --net_nb_critic_layers 3 --noise 0.5
+> too much noise, not much learning
+Jun27_12-32-26: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_layer_size 32 --net_nb_layers 2 --net_nb_critic_layers 3 --noise 0
+> better but still has too much noise
+
+--> manually added exploration noise annealing: LinearAnneal(-1, -1, 1, 1, -1, -1, 0, 0, -2)
+Jun27_13-12-50: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_layer_size 32 --net_nb_layers 2 --net_nb_critic_layers 3
+> noise of more than 0 is just too much, the reward plumets down to less than zero!
+--> manually added exploration noise annealing: LinearAnneal(-1, -1, 0, 0, -1, -1, 0, 0, -2)
+Jun27_13-26-56: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_layer_size 32 --net_nb_layers 2 --net_nb_critic_layers 3
+--> manually added exploration noise annealing: LinearAnneal(-0.7, -1.6)
+--> increased forward progress reward by 10x
+Jun28_16-25-15: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_layer_size 64 --net_nb_layers 2
+> doesn't seem to learn to hop, just dives forward
+Jun28_16-34-49: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_layer_size 64 --net_nb_layers 2 --gamma 0.995 --gae_lambda 0.97
+> ✔✔✔ It hops, yay! gamma 0.995 gae_lambda 0.97 are great!
+--> γ: 0.99 -> 0.995 | λ: 0.95 -> 0.97 (✔✔✔)

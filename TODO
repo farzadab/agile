@@ -3,18 +3,22 @@ TODO PPO:
         ☐ last episode: use v(s_last) if not dead yet @high
             need to check timelimit to see if it is reached
             
-    ☐ normalize actions
+    ☐ normalize actions: so that the amount of added noise is comparable
+
+    locomotion tasks:
+        ✔ Hopper @done(18-06-28 17:51)
+        ☐ Walker2D
 
     roadmap Michiel:
         ☐ multiprocessing @medium
         ☐ ask Glen about
-        ☐ PointMass to follow circle/trajectory based on phase alone
+        ✔ PointMass to follow circle/trajectory based on phase alone @done(18-06-28 10:51)
         ☐ PointMass to follow impossible look-ahead trajectory
 
     experiments:
         ☐ validation criteria: reached as extra dict?
-        ☐ register environments
-        ☐ v^2 reward: use square of the inwards velocity
+        ☐ register environments  @low
+        ☐ v^2 reward: use square of the inwards velocity @low
     new env:
         ☐ experiment with the effect of using phase
 

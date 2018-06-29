@@ -22,6 +22,7 @@ class PPO(object):
             gamma=0.99,
             gae_lambda=0.95,
             exploration_noise=-1,
+            exploration_anneal=None,
             running_norm=False,
             anneal_eps=True,
             writer=None, render=False):
@@ -53,6 +54,7 @@ class PPO(object):
         self.anneal_eps = anneal_eps
         self.running_norm = running_norm
         self.gae_lambda = gae_lambda
+        self.exploration_anneal = exploration_anneal
 
         self.render = render
         self.writer = writer
@@ -104,6 +106,8 @@ class PPO(object):
         for i_iter in range(nb_iters):
             print('\rIteration: %d' % (i_iter+1), end='')
             self.writer.set_epoch(i_iter)
+            if self.exploration_anneal:
+                self.actor.set_noise(self.exploration_anneal.get_coeff(i_iter / nb_iters))
 
             if i_iter > nb_iters / 2:
                 self.running_norm = False
