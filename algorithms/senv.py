@@ -2,11 +2,13 @@
 from gym.utils import seeding
 import numpy as np
 import os.path as path
+import copy
 import gym
 import pybullet_envs
 
 from algorithms.plot import ScatterPlot, QuiverPlot, Plot
-
+from core.object_utils import ObjectWrapper
+from algorithms.normalization import NormalizedEnv
 
 class PointMass(gym.Env):
     '''
@@ -285,6 +287,21 @@ class CircularPhaseSAG(CircularPointMass):
             self.phase += 2*np.pi
         return np.concatenate([self.state[self.parent_indices], [self.phase]])
 
+class MultiStepEnv(ObjectWrapper):
+    def __init__(self, env, nb_steps=5):
+        super().__init__(env)
+        self.__wrapped__ = env
+        self.nb_steps = nb_steps
+    
+    def step(self, action):
+        total_reward = 0
+        for i in range(self.nb_steps):
+            obs, reward, done, _ = self.env.step(action)
+            total_reward += reward
+            if done:
+                break
+        return obs, total_reward / self.nb_steps, done, {}
+    
 
 _ENV_MAP = dict(
     PointMass=PointMass, PM=PointMass,
@@ -295,8 +312,30 @@ _ENV_MAP = dict(
     CircularPhaseSAG=CircularPhaseSAG, CPhase=CircularPhaseSAG,
 )
 
-def get_env(name, *args, **kwargs):
-    if name in _ENV_MAP:
-        return _ENV_MAP[name](*args, **kwargs)
-    else:
-        return gym.make(name)
+
+class SerializableEnv(ObjectWrapper):
+    def __init__(self, **kwargs):
+        super().__init__(None)
+        self.__params = kwargs
+        self.__setstate__(kwargs)
+
+    def __getstate__(self):
+        state = copy.copy(self.__params)
+        # FIXME: not saving this for now, but may change that later
+        state['writer'] = None
+        return state
+    
+    def __setstate__(self, state):
+        self.__params = state
+        env = SerializableEnv._get_env(**self.__params)
+        super().set_wrapped(env)
+
+    @staticmethod
+    def _get_env(name, multi_step=None, **kwargs):
+        if name in _ENV_MAP:
+            env = _ENV_MAP[name](**kwargs)
+        else:
+            env = gym.make(name)
+        if multi_step:
+            env = MultiStepEnv(env, multi_step)
+        return env

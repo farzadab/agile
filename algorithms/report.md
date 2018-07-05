@@ -237,3 +237,98 @@ Jun28_16-25-15: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_laye
 Jun28_16-34-49: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_layer_size 64 --net_nb_layers 2 --gamma 0.995 --gae_lambda 0.97
 > ✔✔✔ It hops, yay! gamma 0.995 gae_lambda 0.97 are great!
 --> γ: 0.99 -> 0.995 | λ: 0.95 -> 0.97 (✔✔✔)
+
+> Let's see if the 10x progress reward is necessary or not. Res: yes, it is!
+Jun28_17-34-45: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_layer_size 64 --net_nb_layers 2 --gamma 0.995 --gae_lambda 0.97
+> no 10x reward and it doesn't want to move at all
+Jun28_18-08-37: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_layer_size 64 --net_nb_layers 2 --gamma 0.995 --gae_lambda 0.97
+> with 10x reward it soon learn to hop after ~120 iterations and gets really good after ~160 iterations (same as Jun28_16-34-49)
+
+## Walker2D
+--> γ=0.995
+(1 ) Jun28_lambda_0.97  : λ=0.97 γ=0.995
+--> 10x progress reward
+(4 ) Jun29_lambda_0.99  : λ=0.99 γ=0.995
+(6 ) Jun29_lambda_0.95  : λ=0.95 γ=0.995
+(3 ) Jun29_lambda_0.92  : λ=0.92 γ=0.995
+(3 ) Jun29_lambda_0.92_2: λ=0.92 γ=0.995
+(7 ) Jun29_lambda_0.90  : λ=0.90 γ=0.995
+(8 ) Jun29_lambda_0.70  : λ=0.70 γ=0.995
+(5 ) Jun29_gamma_0.999  : λ=0.97 γ=0.999
+(9 ) Jun29_lambda_0.97  : λ=0.97 γ=0.995  > it was a re-run, but got really different result (did I do something different?)
+(10) Jun29_gamma_0.99   : λ=0.97 γ=0.99
+--> 1x progress reward
+(-1) Jun29_16-37-59: learns to stand still, so lots of reward ...
+--> 3x progress reward
+(1.5) Jun29_17-31-35
+(0 ) Jun29_17-33-58
+> just two steps
+--> 7x progress reward
+(3.5) Jun29_17-38-02
+> one step jump
+--> 15x progress reward
+(8.5) Jun29_17-46-06
+> idiot
+--> 4x progress reward
+(  ) Jun29_19-07-37
+> tries to take a step + sometimes just stays still
+--> 2x progress reward
+(  ) Jun29_19-08-13
+> mostly just stays still
+--> 5x progress reward + better logging + removed LinearAnneal (fixed exploration)
+(  ) Jul03_15-13-14
+> learns an interesting heel walk but can't use it for long + stays still or drops
+--> relaxed early termination: z: 0.8 -> 0.68 | pitch: 1.0 -> 5.0
+(  ) Jul03_16-22-00
+--> early termination: pitch: 5.0 -> 1.0
+(  ) Jul03_16-33-14
+--> stale cost: if sum((s - s') ** 2) < 1e-1 then penalize by -0.5
+(  ) Jul03_16-45-48
+--> early termination: z: 0.68 -> 0.70
+(  ) Jul03_16-53-24
+> takes two steps and then stays still
+> the stale cost seemed to work: at first it was just staying still at start but was driven away from that solution
+--> early termination: z: 0.70 -> 0.80 + increased stale cost to -1 instead of -0.5
+(  ) Jul03_17-38-24
+--> added multi_step option
+(  ) Jul03_18-16-02: multi_step of 5
+> just stays still
+--> try to use the same reward as OpenAI Gym MuJoCo envs
+(  ) Jul04_10-51-26
+(  ) Jul04_10-52-03: λ=0.9
+--> decreased critic lr from 40x to 1x + added LinearAnneal back
+(  ) Jul04_11-04-08: same hyper-params as paper λ=0.95 | γ=0.99 | batch_size=2048 | mini_batch_size=64
+--> just the progress reward ...
+(  ) Jul04_11-33-18
+(  ) Jul04_11-47-39
++++ found (and fixed) a bug I guess: scaling the reward with a running norm is not a good idea after all :(
+--> 4x progress reward
+(  ) Jul04_14-06-59
+--> decreased max episode length for Walker2D (200)
+--> do 5 times more critic updates
+(  ) Jul04_14-45-14: batch_size=8000
+> ✔ not bad! but maybe the episodes end too fast?
+> None of them can take more than two steps
+
+--> increased max episode length for Walker2D to the original (1000)
+(✔✔) Jul04_15-36-19: batch_size=8000  | γ=0.99 | λ=0.95
+> It's walking, yay!
+Zhaoming ----- increase network size!
+(✔✔) Jul04_16-00-57: batch_size=8000  | γ=0.99 | λ=0.95 | nb_layers=3 | net_layer_size=80
+> Even faster than Jul04_15-36-19!
+(✖ ) Jul04_16-03-14: batch_size=10000 | γ=0.99 | λ=0.95 | nb_layers=3 | net_layer_size=80
+> somehow this didn't turn out too well, maybe just random noise?
+(  ) Jul05_10-59-53: no advantage normalization (o.w. same as Jul04_16-00-57)
+> worked better than Jul04_16-00-57!
+(  ) Jul05_11-01-46: higher gamma  γ=0.995      (o.w. same as Jul04_16-00-57)
+(  ) Jul05_11-02-38: higher lambda λ=0.97       (o.w. same as Jul04_16-00-57)
+Glen    ----- fixed reward normalization: 1 / (1-γ)
+
+## Circular PointMass with Phase
+Jun29_cphase_large_net: default hyper-params
+> works well but if run for longer horizons, can get behind
+--> using value function as end-state as prediction
+Jun29_cphase_vpred_end: using value function as end-state as prediction
+> works better!
+Jun29_cphase_vpred+40xcritic_lr: increasing critic lr from 5x to 40x
+> works even better!

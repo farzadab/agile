@@ -18,6 +18,8 @@ def get_args():
         env_max_steps=100,
         env_randomize_goal=True,
 
+        multi_step=None,
+
         action_repeat_steps=1,  # not used for now
 
         net_layer_size=16,
@@ -52,6 +54,7 @@ def main():
 
     env = get_env(
         name=args.env,
+        multi_step=args.multi_step,
         randomize_goal=args.env_randomize_goal,
         max_steps=args.env_max_steps,
         reward_style=args.env_reward_style,
@@ -62,7 +65,7 @@ def main():
         env, gamma=args.gamma, gae_lambda=args.gae_lambda,
         running_norm=args.running_norm,
         exploration_noise=args.noise,
-        exploration_anneal=LinearAnneal(-0.7, -1.6),
+        # exploration_anneal=LinearAnneal(-0.7, -1.6),
         init_lr=args.step_size,
         hidden_layer_size=args.net_layer_size,
         nb_layers=args.net_nb_layers, nb_critic_layers=args.net_nb_critic_layers,

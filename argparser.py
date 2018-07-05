@@ -109,6 +109,10 @@ _DEFAULT_ARGS = {
         'type': int,
         'help': 'The size of the mini-batches at each optimization step',
     },
+    'batch_size': {
+        'type': int,
+        'help': 'The size of the batches at each iteration',
+    },
     'step_size': {
         'type': float,
         'help': 'The (initial) learning rate for the optimizer',
@@ -149,5 +153,9 @@ _DEFAULT_ARGS = {
     },
     'ctrl': {
         'help': 'Name of the controller to use',
+    },
+    'multi_step': {
+        'type': int,
+        'help': 'Increases the control time-step by N',
     },
 }

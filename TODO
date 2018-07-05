@@ -5,9 +5,12 @@ TODO PPO:
             
     ☐ normalize actions: so that the amount of added noise is comparable
 
+    ☐ better argument system (and maybe different arg default values for replay/train)
+
     locomotion tasks:
         ✔ Hopper @done(18-06-28 17:51)
-        ☐ Walker2D
+        ✔ Walker2D @started(18-06-29 11:00) @done(18-07-04 16:19) @lasted(5d5h19m9s)
+        ☐ crab
 
     roadmap Michiel:
         ☐ multiprocessing @medium
@@ -64,7 +67,7 @@ TODO PPO:
 
 Papers:
     ☐ backpropagation through the void https://arxiv.org/pdf/1711.00123
-    ☐ Robust task-based control policies http://www.cs.ubc.ca/~van/papers/2009-TOG-taskControl/2009-TOG-taskControl.pdf
+    ✔ Robust task-based control policies http://www.cs.ubc.ca/~van/papers/2009-TOG-taskControl/2009-TOG-taskControl.pdf @done(18-07-05 11:31)
     ☐ World Models https://arxiv.org/pdf/1803.10122.pdf
     ☐ Bayesian Optimization Using Domain Knowledge on the ATRIAS biped https://arxiv.org/pdf/1709.06047.pdf
     ☐ Back to Basics: Benchmarking Canonical Evolution Strategies for Playing Atari https://arxiv.org/abs/1802.08842

@@ -3,6 +3,7 @@ import torch as th
 import numpy as np
 import random
 import tensorboardX
+import copy
 
 from algorithms.models import ActorNet
 from nets import make_net
@@ -86,7 +87,7 @@ class PPO(object):
             self.actor.net.parameters(), lr=self.init_lr,
             betas=(0.95, 0.999), eps=1e-06)
         self.critic_optim = th.optim.Adam(
-            self.critic.parameters(), lr=self.init_lr * 5,
+            self.critic.parameters(), lr=self.init_lr,
             betas=(0.95, 0.999), eps=1e-06)
         
         self.scheduler = MultiOptimScheduler(
@@ -109,8 +110,11 @@ class PPO(object):
             if self.exploration_anneal:
                 self.actor.set_noise(self.exploration_anneal.get_coeff(i_iter / nb_iters))
 
+            # FIXME: how to do this now?
             if i_iter > nb_iters / 2:
                 self.running_norm = False
+
+
             # self.norm_state.mean[:] = 0
             # self.norm_state.std[:] = 1
             # print(self.actor.net[-1].state_dict()['weight'])
@@ -124,11 +128,15 @@ class PPO(object):
             mem.to_tensor()
             mem['adv'] = (mem['adv'] - mem['adv'].mean()) / mem['adv'].std()
 
+            explained_var = 1 - (mem['vpred'] - mem['creward']).var() / mem['creward'].var()
+            self.writer.add_scalar('Train/ExplVar', explained_var)
+
             old_actor = self.actor.make_copy()
             self.scheduler.step()
             for _ in range(nb_epochs):
-                self.update_critic(mem, mini_batch_size)
                 self.update_actor(mem, old_actor, mini_batch_size)
+                for _ in range(5):
+                    self.update_critic(mem, mini_batch_size)
 
             if callable(getattr(self.env, 'visualize_solution', None)):
                 self.env.visualize_solution(
@@ -151,10 +159,10 @@ class PPO(object):
         Does it exactly `nb_save_instances` times in the whole training
         '''
         nb_save_instances = 10
-        return self.save_path and (nb_iters - i_iter - 1) % int(nb_iters / nb_save_instances) == 0
+        return (nb_iters - i_iter - 1) % int(nb_iters / nb_save_instances) == 0
 
-
-    def sample_normalization(self, nb_steps):
+    # FIXME: now that PPO doesn't do the normalization, it looks meaning less
+def sample_normalization(self, nb_steps):
         '''
         Samples data for normalization.
         Usually used for initial normalization, but the values can still change if `running_norm=True`
@@ -172,9 +180,8 @@ class PPO(object):
             self.norm_rew.observe([rew])
 
             state = state_p
-            
 
-    def sample_episode(self, batch_size, mem):
+                def sample_episode(self, batch_size, mem):
         '''
         Samples a certain number of steps from the environment. Always resets at the start.
         TODO fix name: doesn't just sample a single episode, it sample `batch_size` steps now!
@@ -187,6 +194,7 @@ class PPO(object):
 
         done = True  # force reset
         # first = True
+        rews = []
 
         for i_step in inf_range():
             if done:
@@ -199,8 +207,6 @@ class PPO(object):
                 #     print('')
                 # else:
                 #     first = False
-                if self.running_norm:
-                    self.norm_state.observe(_state)
 
                 if i_step > batch_size:
                     break
@@ -215,13 +221,16 @@ class PPO(object):
             
             acts.append(act)
 
-            _state_p, _rew, done, _ = self.env.step(act)
+            _state_p, _rew, done, extra = self.env.step(act)
+            if 'rewards' in extra:
+                rews.append(extra['rewards'])
             # print('\r%5.2f' % _rew, end='')
 
             nstate_p = self.norm_state.normalize(_state_p)
             nrew = self.norm_rew.normalize([_rew])[0]
             mem.record(nstate, act, nrew, nstate_p)
 
+            
             if self.running_norm:
                 self.norm_state.observe(_state_p)
                 self.norm_rew.observe([_rew])
@@ -230,12 +239,18 @@ class PPO(object):
             nstate = nstate_p
             _state = _state_p
         
+        # print(returns)
+        # print(np.mean(returns))
         if self.writer:
             self.writer.add_scalar('Train/AvgReward', float(total_rew) / (i_step+1))
             self.writer.add_scalar('Train/AvgReturn', np.mean(returns))
-            self.writer.add_scalar('Extra/AvgEpsLen', len(acts) / len(returns))
+            self.writer.add_scalar('Train/AvgEpsLen', len(acts) / len(returns))
             self.writer.add_scalar('Extra/Action/Avg', float(np.array(acts).mean()))
             self.writer.add_scalar('Extra/Action/Std', float(np.array(acts).std()))
+            if rews:
+                rews_t = np.mean(rews, axis=0)
+                for i, r in enumerate(rews_t):
+                    self.writer.add_scalar('Rewards/Avg-%d' % i, r)
     
 
     def update_critic(self, mem, batch_size):
@@ -296,6 +311,8 @@ class PPO(object):
         return mean_loss
 
     def save_models(self, path, index=None):
+        if path is None:
+            return
         name = 'last' if index is None else str(index)
         os.makedirs(path, exist_ok=True)
         save_obj = dict(
@@ -310,7 +327,7 @@ class PPO(object):
 
     def load_models(self, path, actor=True, critic=True, norm=True):
         loaded_obj = th.load(path)
-        
+
         if actor:
             self.actor.net.load_state_dict(loaded_obj['actor'])
         if critic:
@@ -339,74 +356,25 @@ class PPO(object):
         return norm_matrix.mm(actor_matrix.t())
 
 
-# # TODO: merge with dynamics.Data
-# class ReplayMemory(object):
-#     def __init__(self, gamma, gae_lambda):
-#         self.data = []
-#         self.gamma = gamma
-#         self.gae_lambda = gae_lambda
-#         self.episode_start_index = 0
-
-#     def size(self):
-#         return len(self.data)
-
-#     def record(self, s, a, r, ns):
-#         self.data.append(ObservedTuple(s, a, r, ns))
-
-#     def calc_episode_rewards(self, vfunc):
-#         # rew = 0
-#         # TODO: compute advantages and gae ....
-#         # TODO: compute TD(λ)
-#         vnext = vfunc(self.data[-1].ns)
-#         target = 0
-#         for t in reversed(self.data[self.episode_start_index:-1]):
-#             vcurr = vfunc(t.s)
-#             t.set_adv(t.r + self.gamma * vnext - vcurr)
-#             target = t.adv + target * self.gamma * self.gae_lambda
-#             t.set_target(target)
-#             # rew = t.r + self.gamma * rew
-#             # t.set_cum_rew(rew)
-
-#         self.episode_start_index = len(self.data)
-#         # if len(self.data):
-#         #     print('\nminmax')
-#         #     print(np.min([t.cr for t in self.data]))
-#         #     print(np.max([t.cr for t in self.data]))
-#             # print(np.min([t.s.numpy() for t in self.data], 0))
-#             # print(np.max([t.s.numpy() for t in self.data], 0))
-
-#     # def extend(self, other):
-#     #     for k in self.key_names:
-#     #         self[k].extend(other[k])
-#     #     self._size += other.size()
-
-#     def sample(self, sample_size=None):
-#         if sample_size is None or sample_size > self.size():
-#             sample_size = self.size()
-#         return random.sample(self.data, sample_size)
-
-#     # def get_all(self):
-#     #     return self.data
-
-
 class ReplayMemory(Data):
     def __init__(self, gamma, gae_lambda):
-        super().__init__(['state', 'action', 'reward', 'nstate', 'td', 'adv', 'creward', 'vtarg'])
+        super().__init__(['state', 'action', 'reward', 'nstate', 'vpred', 'td', 'adv', 'creward', 'vtarg'])
         self.gamma = gamma
         self.gae_lambda = gae_lambda
         self.episode_start_index = 0
         self.tensored = False
 
     def record(self, s, a, r, ns):
-        super().add_point(s, a, r, ns, 0, 0, 0, 0)
+        super().add_point(s, a, r, ns, 0, 0, 0, 0, 0)
 
     def calc_episode_targets(self, vfunc):
-        if self.size() == 0:
+        if self.size() - self.episode_start_index == 0:
             return
         crew = 0
         adv = 0
         # TODO fix: this is wrong, either set to 0 or just use it when the agent is still alive ...
         vpred = 0#vfunc(self['nstate'][-1])
+        # print(self.episode_start_index, self.size())
         episode_return = 0
         for i in range(self.size()-1, self.episode_start_index-1, -1):
             episode_return += self['reward'][i]
@@ -425,8 +393,20 @@ class ReplayMemory(Data):
             self['adv'][i] = adv
             self['creward'][i] = crew
             self['vtarg'][i] = self['adv'][i] + vpred
+            self['vpred'][i] = vpred
             # self['vnext'][i] = vnext
-        
+
+        # lens = max(1, int((self.size() - self.episode_start_index) / 5))
+        # print('\n-------------------- Episode length:  %d ---------------------' % (self.size() - self.episode_start_index))
+        # td = th.FloatTensor(self['td'][self.episode_start_index:])
+        # adv = th.FloatTensor(self['adv'][self.episode_start_index:])
+        # vtarg = th.FloatTensor(self['vtarg'][self.episode_start_index:])
+        # crew = th.FloatTensor(self['creward'][self.episode_start_index:])
+        # print('td   : %7.3f  %7.3f  %7.3f' % ( td[:lens].mean(), td[2*lens:3*lens].mean(), td[-lens:].mean()))
+        # print('adv  : %7.3f  %7.3f  %7.3f' % ( adv[:lens].mean(), adv[2*lens:3*lens].mean(), adv[-lens:].mean()))
+        # print('vtarg: %7.3f  %7.3f  %7.3f' % ( vtarg[:lens].mean(), vtarg[2*lens:3*lens].mean(), vtarg[-lens:].mean()))
+        # print('crew : %7.3f  %7.3f  %7.3f' % ( crew[:lens].mean(), crew[2*lens:3*lens].mean(), crew[-lens:].mean()))
+
         # print('---------------------------------------------')
         # print(th.FloatTensor(self['td'])[self.episode_start_index:self.episode_start_index+10])
         # print(th.FloatTensor(self['adv'])[self.episode_start_index:self.episode_start_index+10])
@@ -440,6 +420,7 @@ class ReplayMemory(Data):
         # print(th.FloatTensor(self['creward'])[-10:])
         # print(th.FloatTensor(self['vtarg'])[-10:])
 
+        # print(self.episode_start_index, self.size())
         self.episode_start_index = self.size()
         return episode_return
         # if len(self.data):

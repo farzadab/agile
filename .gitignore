@@ -3,6 +3,9 @@
 .bens_envs/
 cust_envs
 
+# saved files
+*.pt
+
 # rllab
 rllab
 logs/
@@ -10,6 +13,7 @@ rllab_scripts/
 
 # pybullet
 0_VRDemoSettings.txt
+timings*.json
 
 # tensorboard-pytorch
 runs/

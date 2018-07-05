@@ -2,7 +2,9 @@ import torch as th
 import numpy as np
 import collections
 import gym
-import wrapt
+
+from core.object_utils import ObjectWrapper
+
 
 # Taken from https://gitlab.com/zxieaa/cassie.git
 class Stats():
@@ -28,7 +30,7 @@ class Stats():
         self.sum = self.sum + obs
         self.sum_sqr += obs.pow(2)
         self.mean = self.sum / self.n
-        self.std = (self.sum_sqr / self.n - self.mean.pow(2)).clamp(1e-2,1e9).sqrt()
+        self.std = (self.sum_sqr / self.n - self.mean.pow(2)).clamp(1e-4,1e10).sqrt()
         self.mean = self.mean.float()
         self.std = self.std.float()
 
@@ -59,17 +61,22 @@ class Stats():
 
 
 # originally from https://github.com/rll/rllab/tree/master/rllab/envs/normalized_env.py
-class NormalizedEnv(wrapt.ObjectProxy):
+class NormalizedEnv(ObjectWrapper):
     def __init__(
             self,
             env,
             normalize_obs=False,
-            # normalize_reward=False,
+            gamma=0,  # only used for normalization
     ):
         '''
         Assumes the observation and action spaces are always gym.spaces.Box(dtype=np.float32)
+
+        @param normalize_obs: whether or not to normalize the observations
+        @param gamma: the discount factor (γ), used to normalized the rewards. Default: no normalization
         '''
         super().__init__(env)
+        self.naaa = 'normalizedEnv'
+        self.gamma = gamma
         self.norm_stt = Stats(
             input_size=env.observation_space.shape[0],
             shift_mean=normalize_obs, scale=normalize_obs, clip=normalize_obs
@@ -82,28 +89,33 @@ class NormalizedEnv(wrapt.ObjectProxy):
         ub = np.ones(self.__wrapped__.action_space.shape)
         self.action_space = gym.spaces.Box(-1 * ub, ub, dtype=np.float32)
 
-    def _apply_normalize_obs(self, obs):
-        self._update_obs_estimate(obs)
-        return (obs - self._obs_mean) / (np.sqrt(self._obs_var) + 1e-8)
+    # def _apply_normalize_obs(self, obs):
+    #     self._update_obs_estimate(obs)
+    #     return (obs - self._obs_mean) / (np.sqrt(self._obs_var) + 1e-8)
 
-    def _apply_normalize_reward(self, reward):
-        self._update_reward_estimate(reward)
-        return reward / (np.sqrt(self._reward_var) + 1e-8)
+    # def _apply_normalize_reward(self, reward):
+    #     self._update_reward_estimate(reward)
+    #     return reward / (np.sqrt(self._reward_var) + 1e-8)
 
     def reset(self):
-        return self.norm_stt.normalize(self.__wrapped__.reset())
-
+        stt = self.__wrapped__.reset()
+        self.norm_stt.observe(stt)
+        return self.norm_stt.normalize(stt)
+    
     def step(self, action):
         # rescale the action
-        lb, ub = self.__wrapped__.action_space.bounds
+        ub = self.__wrapped__.action_space.high
+        lb = self.__wrapped__.action_space.low
         scaled_action = lb + (action + 1.) * 0.5 * (ub - lb)
         scaled_action = np.clip(scaled_action, lb, ub)
         
         stt, rew, done, info = self.__wrapped__.step(scaled_action)
 
+        self.norm_stt.observe(stt)
+
         return as_named_tuple(
             self.norm_stt.normalize(stt),
-            rew, # self.norm_rew.normalize(rew),
+            rew * (1 - self.gamma), # self.norm_rew.normalize(rew),
             done,
             **info)
 
