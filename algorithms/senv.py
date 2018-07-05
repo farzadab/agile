@@ -313,25 +313,25 @@ _ENV_MAP = dict(
 )
 
 
-class SerializableEnv(ObjectWrapper):
-    def __init__(self, **kwargs):
-        super().__init__(None)
-        self.__params = kwargs
-        self.__setstate__(kwargs)
+# class SerializableEnv(ObjectWrapper):
+#     def __init__(self, **kwargs):
+#         super().__init__(None)
+#         self.__params = kwargs
+#         self.__setstate__(kwargs)
 
-    def __getstate__(self):
-        state = copy.copy(self.__params)
-        # FIXME: not saving this for now, but may change that later
-        state['writer'] = None
-        return state
+#     def __getstate__(self):
+#         state = copy.copy(self.__params)
+#         # FIXME: not saving this for now, but may change that later
+#         state['writer'] = None
+#         return state
     
-    def __setstate__(self, state):
-        self.__params = state
-        env = SerializableEnv._get_env(**self.__params)
-        super().set_wrapped(env)
+#     def __setstate__(self, state):
+#         self.__params = state
+#         env = SerializableEnv._get_env(**self.__params)
+#         super().set_wrapped(env)
 
-    @staticmethod
-    def _get_env(name, multi_step=None, **kwargs):
+    # @staticmethod
+def get_env(name, multi_step=None, **kwargs):
         if name in _ENV_MAP:
             env = _ENV_MAP[name](**kwargs)
         else:

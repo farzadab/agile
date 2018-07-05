@@ -162,7 +162,7 @@ class PPO(object):
         return (nb_iters - i_iter - 1) % int(nb_iters / nb_save_instances) == 0
 
     # FIXME: now that PPO doesn't do the normalization, it looks meaning less
-def sample_normalization(self, nb_steps):
+    def sample_normalization(self, nb_steps):
         '''
         Samples data for normalization.
         Usually used for initial normalization, but the values can still change if `running_norm=True`
@@ -181,7 +181,7 @@ def sample_normalization(self, nb_steps):
 
             state = state_p
 
-                def sample_episode(self, batch_size, mem):
+    def sample_episode(self, batch_size, mem):
         '''
         Samples a certain number of steps from the environment. Always resets at the start.
         TODO fix name: doesn't just sample a single episode, it sample `batch_size` steps now!
