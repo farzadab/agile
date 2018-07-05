@@ -1,8 +1,9 @@
 from algorithms.PPO import PPO
-from algorithms.senv import get_env
+from algorithms.senv import SerializableEnv
 from argparser import Args
 from logs import LogMaster, ConsoleWriter, AverageWriter
 from algorithms.anneal import LinearAnneal
+from algorithms.normalization import NormalizedEnv
 
 def get_args():
     return Args(
@@ -48,22 +49,31 @@ def main():
     writer = None
     if args.replay_path:
         args.store = False
+        args.load_path = args.replay_path
 
     logm = LogMaster(args)
     writer = logm.get_writer()
 
-    env = get_env(
-        name=args.env,
-        multi_step=args.multi_step,
-        randomize_goal=args.env_randomize_goal,
-        max_steps=args.env_max_steps,
-        reward_style=args.env_reward_style,
-        writer=writer,
-    )
+    if args.load_path:
+        # FIXME: writer!
+        ppo = PPO.load(args.load_path)
+        env = ppo.get_env()
+    else:
+        env = NormalizedEnv(
+            SerializableEnv(
+                name=args.env,
+                multi_step=args.multi_step,
+                randomize_goal=args.env_randomize_goal,
+                max_steps=args.env_max_steps,
+                reward_style=args.env_reward_style,
+                writer=writer,
+            ),
+            normalize_obs=True,
+            gamma=args.gamma,
+        )
 
     ppo = PPO(
         env, gamma=args.gamma, gae_lambda=args.gae_lambda,
-        running_norm=args.running_norm,
         exploration_noise=args.noise,
         # exploration_anneal=LinearAnneal(-0.7, -1.6),
         init_lr=args.step_size,
@@ -89,7 +99,8 @@ def main():
 def train(args, env, ppo, logm=None):
 
     if args.load_path:
-        ppo.load_models(args.load_path)
+        # ppo.load_models(args.load_path)
+        pass
     else:
         ppo.sample_normalization(args.normalization_steps)
 
@@ -99,10 +110,8 @@ def train(args, env, ppo, logm=None):
             znet_critic=str(ppo.critic),
         ),
         extras=dict(
-            norm_rew_mean=str(ppo.norm_rew.mean.tolist()),
-            norm_rew_std=str(ppo.norm_rew.std.tolist()),
-            norm_state_mean=str(ppo.norm_state.mean.tolist()),
-            norm_state_std=str(ppo.norm_state.std.tolist()),
+            norm_state_mean=str(env.norm_stt.mean.tolist()),
+            norm_state_std=str(env.norm_stt.std.tolist()),
         )
     )
 
@@ -121,7 +130,7 @@ def replay(args, env, ppo):
 
     # args.env_max_steps *= 2
     try:
-        ppo.load_models(args.replay_path, critic=False)
+        # ppo.load_models(args.replay_path, critic=False)
         if ppo.actor.is_linear():
             print('Policy:')
             print(ppo.extract_linear_policy())

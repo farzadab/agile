@@ -13,6 +13,8 @@ from algorithms.normalization import Stats
 
 
 class PPO(object):
+    SERIALIZER_VERSION = 2
+
     def __init__(
             self, env,
             hidden_layer_size=16,
@@ -24,7 +26,6 @@ class PPO(object):
             gae_lambda=0.95,
             exploration_noise=-1,
             exploration_anneal=None,
-            running_norm=False,
             anneal_eps=True,
             writer=None, render=False):
         '''
@@ -42,7 +43,6 @@ class PPO(object):
         @param gamma: discount factor parameter (scalar)
         @param gae_lambda: the λ parameter in GAE(λ) (scalar)
         @param exploration_noise: the amount of exploration noise (log σ) for the actor (scalar)
-        @param running_norm: whether or not to use a running average for normalization
         @param anneal_eps: whether or not to anneal the clipping ϵ parameter over time
         @param writer: writer for logging training curves and images(tensorboardX.SummaryWriter)
         @param render: whehter to call the `env.render(mode='human')` or not. If yes, done at every step (bool)
@@ -53,7 +53,6 @@ class PPO(object):
         self.init_lr = init_lr
         self.annealing_rate = annealing_rate
         self.anneal_eps = anneal_eps
-        self.running_norm = running_norm
         self.gae_lambda = gae_lambda
         self.exploration_anneal = exploration_anneal
 
@@ -77,10 +76,6 @@ class PPO(object):
         )
 
         self.init_optims()
-
-        self.norm_state = Stats(env.observation_space.shape[0])
-        # can only scale the reward
-        self.norm_rew = Stats(1, shift_mean=False, scale=True, clip=False)
 
     def init_optims(self):
         self.actor_optim = th.optim.Adam(
@@ -111,8 +106,8 @@ class PPO(object):
                 self.actor.set_noise(self.exploration_anneal.get_coeff(i_iter / nb_iters))
 
             # FIXME: how to do this now?
-            if i_iter > nb_iters / 2:
-                self.running_norm = False
+            # if i_iter > nb_iters / 2:
+            #     self.running_norm = False
 
 
             # self.norm_state.mean[:] = 0
@@ -140,16 +135,16 @@ class PPO(object):
 
             if callable(getattr(self.env, 'visualize_solution', None)):
                 self.env.visualize_solution(
-                    policy=lambda s: self.actor.forward(self.norm_state.normalize(th.FloatTensor(s))).detach(),
-                    value_func=lambda s: self._value_function(self.norm_state.normalize(s)),
+                    policy=lambda s: self.actor.forward(th.FloatTensor(s)).detach(),
+                    value_func=lambda s: self._value_function(s),
                     i_iter=i_iter
                 )
 
-            self.save_models(self.save_path)  # always save the last model
+            self.save(self.save_path)  # always save the last model
             
             # save the models. we do it 10 times in the whole training cycle
             if self._time_to_save(i_iter, nb_iters):
-                self.save_models(self.save_path, index=i_iter)
+                self.save(self.save_path, index=i_iter)
     
 
     def _time_to_save(self, i_iter, nb_iters):
@@ -162,7 +157,7 @@ class PPO(object):
         return (nb_iters - i_iter - 1) % int(nb_iters / nb_save_instances) == 0
 
     # FIXME: now that PPO doesn't do the normalization, it looks meaning less
-def sample_normalization(self, nb_steps):
+    def sample_normalization(self, nb_steps):
         '''
         Samples data for normalization.
         Usually used for initial normalization, but the values can still change if `running_norm=True`
@@ -171,17 +166,11 @@ def sample_normalization(self, nb_steps):
         
         for _ in range(nb_steps):
             if done:
-                state = self.env.reset()
-                self.norm_state.observe(state)
+                _ = self.env.reset()
 
-            state_p, rew, done, _ = self.env.step(self.env.action_space.sample())
+            _, _, done, _ = self.env.step(self.env.action_space.sample())
 
-            self.norm_state.observe(state_p)
-            self.norm_rew.observe([rew])
-
-            state = state_p
-
-                def sample_episode(self, batch_size, mem):
+    def sample_episode(self, batch_size, mem):
         '''
         Samples a certain number of steps from the environment. Always resets at the start.
         TODO fix name: doesn't just sample a single episode, it sample `batch_size` steps now!
@@ -199,10 +188,10 @@ def sample_normalization(self, nb_steps):
         for i_step in inf_range():
             if done:
                 ret = mem.calc_episode_targets(self._value_function)
+                # print(ret)
                 if ret is not None:
                     returns.append(ret)
-                _state = self.env.reset()
-                nstate = self.norm_state.normalize(_state)
+                state = self.env.reset()
                 # if not first:
                 #     print('')
                 # else:
@@ -217,27 +206,19 @@ def sample_normalization(self, nb_steps):
                 import time
                 time.sleep(0.01)
 
-            act = self.actor.get_action(th.FloatTensor(nstate), explore=True).detach().numpy()
+            act = self.actor.get_action(th.FloatTensor(state), explore=True).detach().numpy()
             
             acts.append(act)
 
-            _state_p, _rew, done, extra = self.env.step(act)
+            state_p, rew, done, extra = self.env.step(act)
             if 'rewards' in extra:
                 rews.append(extra['rewards'])
             # print('\r%5.2f' % _rew, end='')
 
-            nstate_p = self.norm_state.normalize(_state_p)
-            nrew = self.norm_rew.normalize([_rew])[0]
-            mem.record(nstate, act, nrew, nstate_p)
+            mem.record(state, act, rew, state_p)
 
-            
-            if self.running_norm:
-                self.norm_state.observe(_state_p)
-                self.norm_rew.observe([_rew])
-
-            total_rew += _rew
-            nstate = nstate_p
-            _state = _state_p
+            total_rew += rew
+            state = state_p
         
         # print(returns)
         # print(np.mean(returns))
@@ -310,22 +291,54 @@ def sample_normalization(self, nb_steps):
             
         return mean_loss
 
-    def save_models(self, path, index=None):
+    # The legacy (v1.0) version of pickling. Keeping it for future reference
+    # def save_models(self, path, index=None):
+    #     if path is None:
+    #         return
+    #     name = 'last' if index is None else str(index)
+    #     os.makedirs(path, exist_ok=True)
+    #     save_obj = dict(
+    #         actor=self.actor.net.state_dict(),
+    #         critic=self.critic.state_dict(),
+    #         norm_rew=self.norm_rew,
+    #         norm_state=self.norm_state
+    #     )
+    #     th.save(save_obj, os.path.join(path, '%s-ppo.pt' % name))
+    #     # self.actor.save_model(os.path.join(path, '%s-actor.pt' % str(index)))
+    #     # th.save(self.critic, os.path.join(path, '%s-critic.pt' % str(index)))
+
+    def get_env(self):
+        return self.env
+
+    def save(self, path, index=None):
         if path is None:
             return
         name = 'last' if index is None else str(index)
         os.makedirs(path, exist_ok=True)
-        save_obj = dict(
-            actor=self.actor.net.state_dict(),
-            critic=self.critic.state_dict(),
-            norm_rew=self.norm_rew,
-            norm_state=self.norm_state
-        )
-        th.save(save_obj, os.path.join(path, '%s-ppo.pt' % name))
-        # self.actor.save_model(os.path.join(path, '%s-actor.pt' % str(index)))
-        # th.save(self.critic, os.path.join(path, '%s-critic.pt' % str(index)))
+        th.save(self, os.path.join(path, '%s-ppo.pt' % name))
+    
+    @staticmethod
+    def load(path, index=None):
+        # name = 'last' if index is None else str(index)
+        # return th.load(os.path.join(path, '%s-ppo.pt' % name))
+        # FIXME: use index ....
+        return th.load(path)
+    
+    def __getstate__(self):
+        state = copy.copy(self.__dict__)
+        # FIXME: how to handle these?
+        state['writer'] = None
+        state['save_path'] = None
+        state['actor_optim'] = None
+        state['critic_optim'] = None
+        state['scheduler'] = None
+        return state
 
-    def load_models(self, path, actor=True, critic=True, norm=True):
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self.init_optims()
+
+    def __model_loader_v1(self, path, actor=True, critic=True, norm=True):
         loaded_obj = th.load(path)
 
         if actor:
@@ -347,8 +360,8 @@ def sample_normalization(self, nb_steps):
         policy = self.actor.net.state_dict()
         norm_matrix = th.cat(
             (
-                th.cat((th.diag(self.norm_state.std), th.zeros((1, self.norm_state.std.shape[0])))),
-                th.cat((self.norm_state.mean, th.FloatTensor([1]))).reshape(-1, 1),
+                th.cat((th.diag(self.env.norm_stt.std), th.zeros((1, self.env.norm_stt.std.shape[0])))),
+                th.cat((self.env.norm_stt.mean, th.FloatTensor([1]))).reshape(-1, 1),
             ),
             1
         )

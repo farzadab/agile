@@ -10,6 +10,8 @@ class ObjectWrapper(object):
         self.set_wrapped(wrap_object)
     def set_wrapped(self, wrapped):
         self.__wrapped__ = wrapped
+    def __getstate__(self):
+        return self.__dict__
     def __setstate__(self, state):
         self.__dict__.update(state)
     def __getattr__(self, attr_name):

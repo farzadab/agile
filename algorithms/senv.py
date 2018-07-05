@@ -337,5 +337,5 @@ class SerializableEnv(ObjectWrapper):
         else:
             env = gym.make(name)
         if multi_step:
-            env = MultiStepEnv(env, multi_step)
+            env = MultiStepEnv(env, nb_steps=multi_step)
         return env
