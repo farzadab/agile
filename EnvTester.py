@@ -7,7 +7,7 @@ import gym
 
 # load my environments
 import cust_envs, envs
-from algorithms.senv import get_env
+from algorithms.senv import SerializableEnv
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -22,7 +22,7 @@ def parse_args():
 def main():
     args = parse_args()
     print('Testing environment %s' % args.env)
-    env = get_env(args.env)
+    env = SerializableEnv(name=args.env)
     print(env)
     
     try:

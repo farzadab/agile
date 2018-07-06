@@ -8,6 +8,7 @@
   - `Res` indicates a response (or answer) to a question, most likely an answer found later down the line
   - `⚫⚫⚫` misc
   - `>` description or explanation about the run
+  - `⇒⇒⇒` overal description
 
 # Report
 
@@ -310,6 +311,8 @@ Jun28_18-08-37: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_laye
 > ✔ not bad! but maybe the episodes end too fast?
 > None of them can take more than two steps
 
+## 04/07/2018 - Commit c28cf8bfe84467b360cd0a834785932b58097c5f
+
 --> increased max episode length for Walker2D to the original (1000)
 (✔✔) Jul04_15-36-19: batch_size=8000  | γ=0.99 | λ=0.95
 > It's walking, yay!
@@ -321,8 +324,26 @@ Zhaoming ----- increase network size!
 (  ) Jul05_10-59-53: no advantage normalization (o.w. same as Jul04_16-00-57)
 > worked better than Jul04_16-00-57!
 (  ) Jul05_11-01-46: higher gamma  γ=0.995      (o.w. same as Jul04_16-00-57)
+> doesn't work as well, but may be due to higher variance of total return (larger γ means larger discounted return)
 (  ) Jul05_11-02-38: higher lambda λ=0.97       (o.w. same as Jul04_16-00-57)
+> seems to work worse, but may be due to noise only
+
 Glen    ----- fixed reward normalization: 1 / (1-γ)
+
+
+## 05/07/2018 - Commit 3981724c80923960dfec50305d072a8acbe7b1f9 (Serialization V2)
+⇒⇒⇒ This is a hard fork that can't open the previously saved files. In order to open the previously saved files do something like:
+```bash
+git checkout serialization_v1  # v1 compatible branch
+python3 -m algorithms.main --env 'Walker2DBulletEnv-v0' --net_layer_size 80 --net_nb_layers 3 --replay_path runs/Jul05_11-02-38_farzad-desktop/models/last-ppo.pt
+git checkout master   # go back to the master branch
+```
+(  ) Jul05_15-57-48: batch_size=4000 (test new code, but went wrong)
+(  ) Jul05_16-08-31: same as Jul04_16-00-57 (test new code)
+(  ) Jul05_16-09-00: test new code with Hopper
+--> 1x progress reward
+(✖ ) Jul05_16-14-31: see if 1x progress reward is enough
+> pretty much confirms that the 1x progress reward is NOT enough
 
 ## Circular PointMass with Phase
 Jun29_cphase_large_net: default hyper-params

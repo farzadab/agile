@@ -56,6 +56,7 @@ def main():
 
     if args.load_path:
         # FIXME: writer!
+        print('loading ..... ', args.load_path)
         ppo = PPO.load(args.load_path)
         env = ppo.get_env()
     else:
@@ -72,16 +73,16 @@ def main():
             gamma=args.gamma,
         )
 
-    ppo = PPO(
-        env, gamma=args.gamma, gae_lambda=args.gae_lambda,
-        exploration_noise=args.noise,
-        # exploration_anneal=LinearAnneal(-0.7, -1.6),
-        init_lr=args.step_size,
-        hidden_layer_size=args.net_layer_size,
-        nb_layers=args.net_nb_layers, nb_critic_layers=args.net_nb_critic_layers,
-        writer=writer,
-        render=args.render or bool(args.replay_path),  # always render in replay mode
-    )
+        ppo = PPO(
+            env, gamma=args.gamma, gae_lambda=args.gae_lambda,
+            exploration_noise=args.noise,
+            # exploration_anneal=LinearAnneal(-0.7, -1.6),
+            init_lr=args.step_size,
+            hidden_layer_size=args.net_layer_size,
+            nb_layers=args.net_nb_layers, nb_critic_layers=args.net_nb_critic_layers,
+            writer=writer,
+            render=args.render or bool(args.replay_path),  # always render in replay mode
+        )
 
     if args.replay_path:
         try:
@@ -127,6 +128,8 @@ def train(args, env, ppo, logm=None):
 
 def replay(args, env, ppo):
     from algorithms.PPO import ReplayMemory
+
+    ppo.render = True
 
     # args.env_max_steps *= 2
     try:

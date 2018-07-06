@@ -3,7 +3,8 @@ TODO PPO:
         ☐ last episode: use v(s_last) if not dead yet @high
             need to check timelimit to see if it is reached
             
-    ☐ normalize actions: so that the amount of added noise is comparable
+    ✔ normalize actions: so that the amount of added noise is comparable @done(18-07-05 16:11)
+    ✔ Glen: normalize rewards with by (1-γ) @done(18-07-05 16:12)
 
     ☐ better argument system (and maybe different arg default values for replay/train)
 
@@ -14,7 +15,6 @@ TODO PPO:
 
     roadmap Michiel:
         ☐ multiprocessing @medium
-        ☐ ask Glen about
         ✔ PointMass to follow circle/trajectory based on phase alone @done(18-06-28 10:51)
         ☐ PointMass to follow impossible look-ahead trajectory
 
@@ -29,6 +29,7 @@ TODO PPO:
         ☐ experiment: start from the same state?
         ☐ better logging system
         ☐ state object?
+        ✔ better saving system @done(18-07-05 16:11)
 
     doc:
         ☐ write up results in Github or wiki (which one?)
@@ -71,7 +72,7 @@ Papers:
     ☐ World Models https://arxiv.org/pdf/1803.10122.pdf
     ☐ Bayesian Optimization Using Domain Knowledge on the ATRIAS biped https://arxiv.org/pdf/1709.06047.pdf
     ☐ Back to Basics: Benchmarking Canonical Evolution Strategies for Playing Atari https://arxiv.org/abs/1802.08842
-    ☐ Basic Instincts http://science.sciencemag.org/content/360/6391/845/tab-pdf
+    ✔ Basic Instincts http://science.sciencemag.org/content/360/6391/845/tab-pdf @done(18-07-05 17:54)
     ☐ One parameter is always enough https://colala.bcs.rochester.edu/papers/piantadosi2018one.pdf
 
 TODO OLD:
