@@ -120,7 +120,10 @@ class PPO(object):
             # TODO: fix name
             self.sample_episode(batch_size, mem)
 
-            mem.to_tensor()
+            returns = mem.calculate_advantages(self._value_function)
+            self.writer.add_scalar('Train/AvgReturn', np.mean(returns))
+
+            # still not sure if this is needed or not
             mem['adv'] = (mem['adv'] - mem['adv'].mean()) / mem['adv'].std()
 
             explained_var = 1 - (mem['vpred'] - mem['creward']).var() / mem['creward'].var()
@@ -128,15 +131,19 @@ class PPO(object):
 
             old_actor = self.actor.make_copy()
             self.scheduler.step()
+
+            for _ in range(nb_epochs * 5):
+                self.update_critic(mem, mini_batch_size)
+
+            returns = mem.calculate_advantages(self._value_function)
+
             for _ in range(nb_epochs):
                 self.update_actor(mem, old_actor, mini_batch_size)
-                for _ in range(5):
-                    self.update_critic(mem, mini_batch_size)
 
             if callable(getattr(self.env, 'visualize_solution', None)):
                 self.env.visualize_solution(
                     policy=lambda s: self.actor.forward(th.FloatTensor(s)).detach(),
-                    value_func=lambda s: self._value_function(s),
+                    value_func=self._value_function,
                     i_iter=i_iter
                 )
 
@@ -179,19 +186,19 @@ class PPO(object):
         # maybe use an env wrapper?
         total_rew = 0
         acts = []
-        returns = []
 
         done = True  # force reset
         # first = True
         rews = []
+        num_episodes = 0
 
         for i_step in inf_range():
             if done:
-                ret = mem.calc_episode_targets(self._value_function)
+                # ret = mem.calc_episode_targets(self._value_function)
                 # print(ret)
-                if ret is not None:
-                    returns.append(ret)
+                mem.record_new_episode()
                 state = self.env.reset()
+                num_episodes += 1
                 # if not first:
                 #     print('')
                 # else:
@@ -220,18 +227,15 @@ class PPO(object):
             total_rew += rew
             state = state_p
         
-        # print(returns)
-        # print(np.mean(returns))
         if self.writer:
             self.writer.add_scalar('Train/AvgReward', float(total_rew) / (i_step+1))
-            self.writer.add_scalar('Train/AvgReturn', np.mean(returns))
-            self.writer.add_scalar('Train/AvgEpsLen', len(acts) / len(returns))
+            self.writer.add_scalar('Train/AvgEpsLen', len(acts) / num_episodes)
             self.writer.add_scalar('Extra/Action/Avg', float(np.array(acts).mean()))
             self.writer.add_scalar('Extra/Action/Std', float(np.array(acts).std()))
             if rews:
                 rews_t = np.mean(rews, axis=0)
-                for i, r in enumerate(rews_t):
-                    self.writer.add_scalar('Rewards/Avg-%d' % i, r)
+                for i, rew in enumerate(rews_t):
+                    self.writer.add_scalar('Rewards/Avg-%d' % i, rew)
     
 
     def update_critic(self, mem, batch_size):
@@ -374,68 +378,82 @@ class ReplayMemory(Data):
         super().__init__(['state', 'action', 'reward', 'nstate', 'vpred', 'td', 'adv', 'creward', 'vtarg'])
         self.gamma = gamma
         self.gae_lambda = gae_lambda
-        self.episode_start_index = 0
+        self.episode_starts = []
         self.tensored = False
 
     def record(self, s, a, r, ns):
         super().add_point(s, a, r, ns, 0, 0, 0, 0, 0)
+    
+    def record_new_episode(self):
+        self.episode_starts.append(self.size())
 
-    def calc_episode_targets(self, vfunc):
-        if self.size() - self.episode_start_index == 0:
-            return
-        crew = 0
-        adv = 0
-        # TODO fix: this is wrong, either set to 0 or just use it when the agent is still alive ...
-        vpred = 0#vfunc(self['nstate'][-1])
+    def calculate_advantages(self, vfunc):
+        '''
+        Calculates the advantages and targets for the current episode
+
+        @param vfunc: the value function (aka critic)
+        '''
+        
+        self.to_tensor()
+
+        episode_returns = []
+        episode_ends = self.episode_starts[1:] + [self.size()]
+        for start, end in zip(self.episode_starts, episode_ends):
+            # if self.size() - self.episode_start_index == 0:
+            #     return
+            crew = 0
+            adv = 0
+            # TODO fix: this is wrong, either set to 0 or just use it when the agent is still alive ...
+            vpred = 0#vfunc(self['nstate'][-1])
+            # print(self.episode_start_index, self.size())
+            episode_return = 0
+            for i in range(end-1, start-1, -1):
+                episode_return += self['reward'][i]
+                crew = self['reward'][i] + crew * self.gamma
+                
+                vnext = vpred
+                vpred = vfunc(self['state'][i])
+                ret_1step  = self['reward'][i] + self.gamma * vnext
+                td_delta = ret_1step - vpred
+                adv = td_delta + adv * self.gamma * self.gae_lambda
+
+                # if i == self.size()-1:  # correcting for the last episode
+                #     adv /= 1-self.gae_lambda
+
+                self['td'][i] = td_delta
+                self['adv'][i] = adv
+                self['creward'][i] = crew
+                self['vtarg'][i] = self['adv'][i] + vpred
+                self['vpred'][i] = vpred
+                # self['vnext'][i] = vnext
+
+            episode_returns.append(episode_return)
+            # lens = max(1, int((self.size() - self.episode_start_index) / 5))
+            # print('\n-------------------- Episode length:  %d ---------------------' % (self.size() - self.episode_start_index))
+            # td = th.FloatTensor(self['td'][self.episode_start_index:])
+            # adv = th.FloatTensor(self['adv'][self.episode_start_index:])
+            # vtarg = th.FloatTensor(self['vtarg'][self.episode_start_index:])
+            # crew = th.FloatTensor(self['creward'][self.episode_start_index:])
+            # print('td   : %7.3f  %7.3f  %7.3f' % ( td[:lens].mean(), td[2*lens:3*lens].mean(), td[-lens:].mean()))
+            # print('adv  : %7.3f  %7.3f  %7.3f' % ( adv[:lens].mean(), adv[2*lens:3*lens].mean(), adv[-lens:].mean()))
+            # print('vtarg: %7.3f  %7.3f  %7.3f' % ( vtarg[:lens].mean(), vtarg[2*lens:3*lens].mean(), vtarg[-lens:].mean()))
+            # print('crew : %7.3f  %7.3f  %7.3f' % ( crew[:lens].mean(), crew[2*lens:3*lens].mean(), crew[-lens:].mean()))
+
+            # print('---------------------------------------------')
+            # print(th.FloatTensor(self['td'])[self.episode_start_index:self.episode_start_index+10])
+            # print(th.FloatTensor(self['adv'])[self.episode_start_index:self.episode_start_index+10])
+            # print(th.FloatTensor(self['reward'])[self.episode_start_index:self.episode_start_index+10])
+            # print(th.FloatTensor(self['creward'])[self.episode_start_index:self.episode_start_index+10])
+            # print(th.FloatTensor(self['vtarg'])[self.episode_start_index:self.episode_start_index+10])
+            # print('...............')
+            # print(th.FloatTensor(self['td'])[-10:])
+            # print(th.FloatTensor(self['adv'])[-10:])
+            # print(th.FloatTensor(self['reward'])[-10:])
+            # print(th.FloatTensor(self['creward'])[-10:])
+            # print(th.FloatTensor(self['vtarg'])[-10:])
+
         # print(self.episode_start_index, self.size())
-        episode_return = 0
-        for i in range(self.size()-1, self.episode_start_index-1, -1):
-            episode_return += self['reward'][i]
-            crew = self['reward'][i] + crew * self.gamma
-            
-            vnext = vpred
-            vpred = vfunc(self['state'][i])
-            ret_1step  = self['reward'][i] + self.gamma * vnext
-            td_delta = ret_1step - vpred
-            adv = td_delta + adv * self.gamma * self.gae_lambda
-
-            # if i == self.size()-1:  # correcting for the last episode
-            #     adv /= 1-self.gae_lambda
-
-            self['td'][i] = td_delta
-            self['adv'][i] = adv
-            self['creward'][i] = crew
-            self['vtarg'][i] = self['adv'][i] + vpred
-            self['vpred'][i] = vpred
-            # self['vnext'][i] = vnext
-
-        # lens = max(1, int((self.size() - self.episode_start_index) / 5))
-        # print('\n-------------------- Episode length:  %d ---------------------' % (self.size() - self.episode_start_index))
-        # td = th.FloatTensor(self['td'][self.episode_start_index:])
-        # adv = th.FloatTensor(self['adv'][self.episode_start_index:])
-        # vtarg = th.FloatTensor(self['vtarg'][self.episode_start_index:])
-        # crew = th.FloatTensor(self['creward'][self.episode_start_index:])
-        # print('td   : %7.3f  %7.3f  %7.3f' % ( td[:lens].mean(), td[2*lens:3*lens].mean(), td[-lens:].mean()))
-        # print('adv  : %7.3f  %7.3f  %7.3f' % ( adv[:lens].mean(), adv[2*lens:3*lens].mean(), adv[-lens:].mean()))
-        # print('vtarg: %7.3f  %7.3f  %7.3f' % ( vtarg[:lens].mean(), vtarg[2*lens:3*lens].mean(), vtarg[-lens:].mean()))
-        # print('crew : %7.3f  %7.3f  %7.3f' % ( crew[:lens].mean(), crew[2*lens:3*lens].mean(), crew[-lens:].mean()))
-
-        # print('---------------------------------------------')
-        # print(th.FloatTensor(self['td'])[self.episode_start_index:self.episode_start_index+10])
-        # print(th.FloatTensor(self['adv'])[self.episode_start_index:self.episode_start_index+10])
-        # print(th.FloatTensor(self['reward'])[self.episode_start_index:self.episode_start_index+10])
-        # print(th.FloatTensor(self['creward'])[self.episode_start_index:self.episode_start_index+10])
-        # print(th.FloatTensor(self['vtarg'])[self.episode_start_index:self.episode_start_index+10])
-        # print('...............')
-        # print(th.FloatTensor(self['td'])[-10:])
-        # print(th.FloatTensor(self['adv'])[-10:])
-        # print(th.FloatTensor(self['reward'])[-10:])
-        # print(th.FloatTensor(self['creward'])[-10:])
-        # print(th.FloatTensor(self['vtarg'])[-10:])
-
-        # print(self.episode_start_index, self.size())
-        self.episode_start_index = self.size()
-        return episode_return
+        return episode_returns
         # if len(self.data):
         #     print('\nminmax')
         #     print(np.min([t.cr for t in self.data]))
