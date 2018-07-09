@@ -245,6 +245,16 @@ Jun28_17-34-45: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_laye
 Jun28_18-08-37: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_layer_size 64 --net_nb_layers 2 --gamma 0.995 --gae_lambda 0.97
 > with 10x reward it soon learn to hop after ~120 iterations and gets really good after ~160 iterations (same as Jun28_16-34-49)
 
+
+## Circular PointMass with Phase
+Jun29_cphase_large_net: default hyper-params
+> works well but if run for longer horizons, can get behind
+--> using value function as end-state as prediction
+Jun29_cphase_vpred_end: using value function as end-state as prediction
+> works better!
+Jun29_cphase_vpred+40xcritic_lr: increasing critic lr from 5x to 40x
+> works even better!
+
 ## Walker2D
 --> γ=0.995
 (1 ) Jun28_lambda_0.97  : λ=0.97 γ=0.995
@@ -341,15 +351,25 @@ git checkout master   # go back to the master branch
 (  ) Jul05_15-57-48: batch_size=4000 (test new code, but went wrong)
 (  ) Jul05_16-08-31: same as Jul04_16-00-57 (test new code)
 (  ) Jul05_16-09-00: test new code with Hopper
+> learns a brittle hop (toe hop) and falls after 3-4 cycles
 --> 1x progress reward
 (✖ ) Jul05_16-14-31: see if 1x progress reward is enough
 > pretty much confirms that the 1x progress reward is NOT enough
+--> 4x progress reward
+Zhaoming ----- change the order of critic and actor updates
+(  ) Jul06_12-10-44: same as Jul05_16-08-31 but with the order of updates changed (bad experiment: no advantage normalization)
+(  ) Jul06_13-26-40: same as above (bad experiment: no advantage normalization)
+> both worked really bad
+(  ) Jul06_15-12-32: same as above but with advantage normalization
+> something weird happened: accidentally I killed this experiment and had to re-run it from the start (Jul06_17-03-39)
+> this new version seems to work a lot better!
+(  ) Jul06_15-13-11: just re-running Jul05_16-08-31 to see if it still works
+> well, it does, maybe the advantage normalization is crucial!
 
-## Circular PointMass with Phase
-Jun29_cphase_large_net: default hyper-params
-> works well but if run for longer horizons, can get behind
---> using value function as end-state as prediction
-Jun29_cphase_vpred_end: using value function as end-state as prediction
-> works better!
-Jun29_cphase_vpred+40xcritic_lr: increasing critic lr from 5x to 40x
-> works even better!
+## Phase-based kinematic motion
+
+Jul06_16-54-05: python3 -m algorithms.main --env CPhase2 --env_reward_style distexp --env_max_steps 500 --batch_size 8000
+> not bad, but maybe a linear actor is not enough
+Jul06_17-14-15: python3 -m algorithms.main --env LPhase1 --env_reward_style distexp --env_max_steps 500 --batch_size 8000
+> almost perfect tracking, but sacrifices left side a little bit
+Jul06_17-29-33: python3 -m algorithms.main --env CPhase2 --env_reward_style distexp --net_nb_layers 2 --env_max_steps 500 --batch_size 8000

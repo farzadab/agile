@@ -59,6 +59,9 @@ def main():
         print('loading ..... ', args.load_path)
         ppo = PPO.load(args.load_path)
         env = ppo.get_env()
+        ppo.writer = writer
+        ppo.save_path = writer.get_logdir()
+        # env.writer = writer
     else:
         env = NormalizedEnv(
             SerializableEnv(

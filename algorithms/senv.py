@@ -9,6 +9,7 @@ import pybullet_envs
 from algorithms.plot import ScatterPlot, QuiverPlot, Plot
 from core.object_utils import ObjectWrapper
 from algorithms.normalization import NormalizedEnv
+from env.paths import CircularPath, LineBFPath
 
 class PointMass(gym.Env):
     '''
@@ -19,9 +20,10 @@ class PointMass(gym.Env):
         'video.frames_per_second' : 20
     }
     reward_styles = {
-        'velocity': dict(vel=1, pos=0, goal=100),
-        'distsq'  : dict(vel=0, pos=1, goal=0),
-        'distsq+g': dict(vel=0, pos=1, goal=5),
+        'velocity': dict(vel=1, pos=0, goal=100, pexp=0),
+        'distsq'  : dict(vel=0, pos=1, goal=0, pexp=0),
+        'distsq+g': dict(vel=0, pos=1, goal=5, pexp=0),
+        'distexp' : dict(vel=0, pos=0, goal=0, pexp=1),
     }
 
     def __init__(self, max_steps=100, randomize_goal=True, writer=None, reset=True, reward_style='velocity'):
@@ -95,8 +97,9 @@ class PointMass(gym.Env):
         p, v = self._integrate(p, v, u)
 
         distance = np.linalg.norm(g-p)
-        reward += self.reward_style['vel'] * np.dot(v, g-p) / distance - .001*(np.linalg.norm(u)**2)
-        reward -= self.reward_style['pos'] * (distance / self.max_position) ** 2
+        reward += self.reward_style['vel']  * np.dot(v, g-p) / distance - .001*(np.linalg.norm(u)**2)
+        reward -= self.reward_style['pos']  * (distance / self.max_position) ** 2
+        reward += self.reward_style['pexp'] * np.exp(-1 * distance)
 
         reached = distance < self.treshold
         if reached:
@@ -287,6 +290,60 @@ class CircularPhaseSAG(CircularPointMass):
             self.phase += 2*np.pi
         return np.concatenate([self.state[self.parent_indices], [self.phase]])
 
+
+class PhaseSAG(PointMass):
+    # TODO: use arg to see if phase should be shown or act
+    def __init__(self, path, start_at_goal=True, *args, **kwargs):
+        self.parent_indices = [0,1,4,5]
+        super().__init__(reset=False, *args, **kwargs)
+        self.phase_start = 0
+        self.phase_end   = 1
+        self.phase = 0
+        self.path = path
+        high = np.concatenate([self.observation_space.high[self.parent_indices], [self.phase_end]])
+        low  = np.concatenate([self.observation_space.low[self.parent_indices],  [self.phase_start]])
+        self.observation_space = gym.spaces.Box(low, high, dtype=np.float32)
+        self.start_at_goal = start_at_goal
+        self.treshold = -1.  # should never achieve the goal, just needs to follow it
+        self.reset()
+    
+    def reset(self):
+        super().reset()
+        self.phase = self.phase_start
+        if self.randomize_goal:
+            self.phase = self.np_random.uniform(self.phase_start, self.phase_end)
+        self._set_goal_pos()
+        if self.start_at_goal:
+            self.state[0:2] = self.state[2:4]
+        return self._get_obs()
+        
+    def _set_goal_pos(self):
+        self.state[2:4] = np.array(self.path.at_point(self.phase)) * self.max_position
+
+    def step(self, u):
+        self.phase += self.dt / self.path.duration()
+        self._set_goal_pos()
+        return super().step(u)
+
+    def _get_obs(self):
+        while self.phase > 1:
+            self.phase -= 1
+        while self.phase < 0:
+            self.phase += 1
+        return np.concatenate([self.state[self.parent_indices], [self.phase]])
+
+
+class CircularPhaseSAG2(PhaseSAG):
+    def __init__(self, *args, **kwargs):
+        path = CircularPath()
+        super().__init__(path, *args, **kwargs)
+
+class LinePhaseSAG(PhaseSAG):
+    def __init__(self, *args, **kwargs):
+        path = LineBFPath()
+        super().__init__(path, *args, **kwargs)
+
+
 class MultiStepEnv(ObjectWrapper):
     def __init__(self, env, nb_steps=5):
         super().__init__(env)
@@ -310,6 +367,8 @@ _ENV_MAP = dict(
     CircularPointMass=CircularPointMass, CPM=CircularPointMass,
     CircularPointSAG=CircularPointMassSAG, CPSAG=CircularPointMassSAG,
     CircularPhaseSAG=CircularPhaseSAG, CPhase=CircularPhaseSAG,
+    CPhase2=CircularPhaseSAG2,
+    LPhase1=LinePhaseSAG,
 )
 
 

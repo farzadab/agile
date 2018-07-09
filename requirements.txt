@@ -4,7 +4,6 @@ pybullet
 numpy
 pygit2
 termcolor
-wrapt  # object proxies
 #path.py
 
 # PyTorch

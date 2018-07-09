@@ -136,6 +136,7 @@ class PPO(object):
                 self.update_critic(mem, mini_batch_size)
 
             returns = mem.calculate_advantages(self._value_function)
+            mem['adv'] = (mem['adv'] - mem['adv'].mean()) / mem['adv'].std()
 
             for _ in range(nb_epochs):
                 self.update_actor(mem, old_actor, mini_batch_size)
