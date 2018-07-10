@@ -368,16 +368,15 @@ Zhaoming ----- change the order of critic and actor updates
 
 ## Phase-based kinematic motion
 
-Jul06_16-54-05: python3 -m algorithms.main --env CPhase2 --env_reward_style distexp --env_max_steps 500 --batch_size 8000
-> not bad, but maybe a linear actor is not enough
-Jul06_17-14-15: python3 -m algorithms.main --env LPhase1 --env_reward_style distexp --env_max_steps 500 --batch_size 8000
-> almost perfect tracking, but sacrifices left side a little bit
-Jul06_17-29-33: python3 -m algorithms.main --env CPhase2 --env_reward_style distexp --net_nb_layers 2 --env_max_steps 500 --batch_size 8000
-
 ## 09/07/2018 - Commit 789d92c28515e09f8d3aed5bf4eb699d506a3cda
 ## 09/07/2018 - Commit 93eb868232c10e6d8f9af1c88dc1534fe21d1b91
 
 ⇒⇒⇒ Phase-based motion for PointMass with different envs (linear actor)
+⚫⚫⚫ python3 -m algorithms.main --env <env> --env_reward_style distexp --env_max_steps 500 --batch_size 8000
+Jul06_16-54-05: CPhase2
+> not bad, but maybe a linear actor is not enough
+Jul06_17-14-15: LPhase1
+> almost perfect tracking, but sacrifices left side a little bit
 Jul09_17-14-14: LPhase2
 > not bad, but could be better, doesn't track perfectly and overshoots
 Jul09_17-14-46: LPhase3
@@ -387,8 +386,11 @@ Jul09_17-15-16: SqPhase1
 Jul09_17-15-28: SqPhase2
 > not bad! follows a triangle path at the discontinuity
 
-⇒⇒⇒ the same but with more powerful actors (`net_nb_layers=2`)
+⇒⇒⇒ the same but with more powerful actors (`net_nb_layers=2`):
+⚫⚫⚫ python3 -m algorithms.main --env <env> --env_reward_style distexp --net_nb_layers 2 --env_max_steps 500 --batch_size 8000
+Jul06_17-29-33: CPhase2
 Jul09_19-21-44: LPhase2
 Jul09_19-22-10: LPhase3
 Jul09_19-22-24: SqPhase1
 Jul09_19-22-35: SqPhase2
+> non-linear actors are all better (using these as reference and making a video)

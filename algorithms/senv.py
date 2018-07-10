@@ -9,7 +9,7 @@ import pybullet_envs
 from algorithms.plot import ScatterPlot, QuiverPlot, Plot
 from core.object_utils import ObjectWrapper
 from algorithms.normalization import NormalizedEnv
-from env.paths import CircularPath, LineBFPath, DiscretePath
+from env.paths import CircularPath, LineBFPath, DiscretePath, RPath1
 
 class PointMass(gym.Env):
     '''
@@ -410,6 +410,18 @@ class StepsPhaseSAG_NC(PhaseSAG):
         )
         super().__init__(path, *args, **kwargs)
 
+
+class PhaseRN1(PhaseSAG):
+    def __init__(self, *args, **kwargs):
+        path = RPath1()
+        super().__init__(path, *args, **kwargs)
+
+class PhaseRN1_NC(PhaseSAG):
+    def __init__(self, *args, **kwargs):
+        path = RPath1(closed=False)
+        super().__init__(path, *args, **kwargs)
+
+
 # almost the same as a circle :(
 # class TriPhaseSAG(PhaseSAG):
 #     def __init__(self, *args, **kwargs):
@@ -471,6 +483,8 @@ _ENV_MAP = dict(
     SqPhase2=SquarePhaseSAG_NC,
     StepsPhase1=StepsPhaseSAG,
     StepsPhase2=StepsPhaseSAG_NC,
+    PhaseRN1=PhaseRN1,
+    PhaseRN1_NC=PhaseRN1_NC,
     # TPhase=TriPhaseSAG,
 )
 

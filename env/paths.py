@@ -69,3 +69,26 @@ class LineBFPath(DiscretePath):
             closed=closed,
             **kwargs
         )
+
+class RPath1(DiscretePath):
+    points = [
+        [-.6, -.8],
+        [-.3, -.8],
+        [0  , -.8],
+        [+.3, -.8],
+        [+.6, -.8],
+
+        [+.8, -.6],
+        [+.8, +.6],
+
+        [+.6, +.8],
+        [0  , +.8],
+        [-.6, +.8],
+
+        [-.8, 0  ],
+        [-.8, 0  ],
+        [-.8, 0  ],
+        [-.8, 0  ],
+    ]
+    def __init__(self, **kwargs):
+        super().__init__(self.points, seconds_per_point=2, **kwargs)
