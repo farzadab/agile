@@ -4,6 +4,7 @@ pybullet
 numpy
 pygit2
 termcolor
+scipy
 #path.py
 
 # PyTorch

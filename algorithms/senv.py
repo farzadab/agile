@@ -9,7 +9,7 @@ import pybullet_envs
 from algorithms.plot import ScatterPlot, QuiverPlot, Plot
 from core.object_utils import ObjectWrapper
 from algorithms.normalization import NormalizedEnv
-from env.paths import CircularPath, LineBFPath
+from env.paths import CircularPath, LineBFPath, DiscretePath
 
 class PointMass(gym.Env):
     '''
@@ -25,15 +25,15 @@ class PointMass(gym.Env):
         'distsq+g': dict(vel=0, pos=1, goal=5, pexp=0),
         'distexp' : dict(vel=0, pos=0, goal=0, pexp=1),
     }
+    max_speed = 2.
+    max_torque = 2.
+    max_position = 20.
+    treshold = 2.
+    dt = .1
+    mass = .2
 
     def __init__(self, max_steps=100, randomize_goal=True, writer=None, reset=True, reward_style='velocity'):
-        self.max_speed = 2.
-        self.max_torque = 2.
-        self.max_position = 20.
         self.max_steps = max_steps
-        self.treshold = 2.
-        self.dt = .1
-        self.mass = .2
         self.randomize_goal = randomize_goal
         
         if reward_style in self.reward_styles:
@@ -292,6 +292,7 @@ class CircularPhaseSAG(CircularPointMass):
 
 
 class PhaseSAG(PointMass):
+    max_speed = 4.
     # TODO: use arg to see if phase should be shown or act
     def __init__(self, path, start_at_goal=True, *args, **kwargs):
         self.parent_indices = [0,1,4,5]
@@ -343,6 +344,101 @@ class LinePhaseSAG(PhaseSAG):
         path = LineBFPath()
         super().__init__(path, *args, **kwargs)
 
+class LinePhaseSAG_NC(PhaseSAG):
+    def __init__(self, *args, **kwargs):
+        path = LineBFPath(closed=False)
+        super().__init__(path, *args, **kwargs)
+
+class SmoothLinePhaseSAG(PhaseSAG):
+    def __init__(self, *args, **kwargs):
+        path = LineBFPath(smooth=True)
+        super().__init__(path, *args, **kwargs)
+
+class SquarePhaseSAG(PhaseSAG):
+    def __init__(self, *args, **kwargs):
+        path = DiscretePath(
+            [
+                [-.5, -.5],
+                [+.5, -.5],
+                [+.5, +.5],
+                [-.5, +.5],
+            ],
+            seconds_per_point=6,
+        )
+        super().__init__(path, *args, **kwargs)
+
+class SquarePhaseSAG_NC(PhaseSAG):
+    def __init__(self, *args, **kwargs):
+        path = DiscretePath(
+            [
+                [-.5, -.5],
+                [+.5, -.5],
+                [+.5, +.5],
+                [-.5, +.5],
+            ],
+            seconds_per_point=6,
+            closed=False,
+        )
+        super().__init__(path, *args, **kwargs)
+
+class StepsPhaseSAG(PhaseSAG):
+    def __init__(self, *args, **kwargs):
+        path = DiscretePath(
+            [
+                [-.5, +.5],
+                [0  , +.5],
+                [0  , 0  ],
+                [+.5, 0  ],
+                [+.5, -.5],
+            ],
+            seconds_per_point=6,
+        )
+        super().__init__(path, *args, **kwargs)
+
+class StepsPhaseSAG_NC(PhaseSAG):
+    def __init__(self, *args, **kwargs):
+        path = DiscretePath(
+            [
+                [-.5, +.5],
+                [0  , +.5],
+                [0  , 0  ],
+                [+.5, 0  ],
+                [+.5, -.5],
+            ],
+            seconds_per_point=6,
+            closed=False
+        )
+        super().__init__(path, *args, **kwargs)
+
+# almost the same as a circle :(
+# class TriPhaseSAG(PhaseSAG):
+#     def __init__(self, *args, **kwargs):
+#         path = DiscretePath(
+#             [
+#                 [-.5, -.5],
+#                 [+.5, -.5],
+#                 [0  , +.5],
+#             ],
+#             seconds_per_point=6,
+#             smooth=True,
+#         )
+#         super().__init__(path, *args, **kwargs)
+
+# almost the same as a circle :(
+# class SmoothSquarePhaseSAG(PhaseSAG):
+#     def __init__(self, *args, **kwargs):
+#         path = DiscretePath(
+#             [
+#                 [-.5, -.5],
+#                 [+.5, -.5],
+#                 [+.5, +.5],
+#                 [-.5, +.5],
+#             ],
+#             seconds_per_point=6,
+#             smooth=True,
+#         )
+#         super().__init__(path, *args, **kwargs)
+
 
 class MultiStepEnv(ObjectWrapper):
     def __init__(self, env, nb_steps=5):
@@ -369,6 +465,13 @@ _ENV_MAP = dict(
     CircularPhaseSAG=CircularPhaseSAG, CPhase=CircularPhaseSAG,
     CPhase2=CircularPhaseSAG2,
     LPhase1=LinePhaseSAG,
+    LPhase2=SmoothLinePhaseSAG,
+    LPhase3=LinePhaseSAG_NC,
+    SqPhase1=SquarePhaseSAG,
+    SqPhase2=SquarePhaseSAG_NC,
+    StepsPhase1=StepsPhaseSAG,
+    StepsPhase2=StepsPhaseSAG_NC,
+    # TPhase=TriPhaseSAG,
 )
 
 
