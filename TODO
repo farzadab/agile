@@ -6,6 +6,8 @@ TODO PPO:
     ✔ normalize actions: so that the amount of added noise is comparable @done(18-07-05 16:11)
     ✔ Glen: normalize rewards with by (1-γ) @done(18-07-05 16:12)
 
+    ☐ Add variation in the speed at all times using Brownian motion?
+
     ☐ better argument system (and maybe different arg default values for replay/train)
 
     ☐ backprop void: combine it with GAE

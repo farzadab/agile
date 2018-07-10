@@ -90,5 +90,5 @@ class RPath1(DiscretePath):
         [-.8, 0  ],
         [-.8, 0  ],
     ]
-    def __init__(self, **kwargs):
-        super().__init__(self.points, seconds_per_point=2, **kwargs)
+    def __init__(self, seconds_per_point=2, **kwargs):
+        super().__init__(self.points, seconds_per_point=seconds_per_point, **kwargs)

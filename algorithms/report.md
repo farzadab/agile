@@ -393,4 +393,18 @@ Jul09_19-21-44: LPhase2
 Jul09_19-22-10: LPhase3
 Jul09_19-22-24: SqPhase1
 Jul09_19-22-35: SqPhase2
+Jul10_10-40-14: StepsPhase1
+Jul10_10-41-55: StepsPhase2
 > non-linear actors are all better (using these as reference and making a video)
+⇒⇒⇒ trying harder environments
+Jul10_12-40-43: PhaseRN1
+> not good, just barely follows the bottom part of the path
+Jul10_12-41-04: PhaseRN1_NC
+> not good but interesting: just tries to get the stationary point right and gets decent reward! (+ maybe the reward scheme is not good)
+
+Jul10_14-15-14: PhaseRN2
+Jul10_14-15-34: PhaseRN2_NC
+
+⇒⇒⇒ other env reward styles
+Jul10_14-42-12: distsq
+Jul10_14-57-19: velocity

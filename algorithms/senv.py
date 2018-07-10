@@ -24,6 +24,7 @@ class PointMass(gym.Env):
         'distsq'  : dict(vel=0, pos=1, goal=0, pexp=0),
         'distsq+g': dict(vel=0, pos=1, goal=5, pexp=0),
         'distexp' : dict(vel=0, pos=0, goal=0, pexp=1),
+        'distsq+e': dict(vel=0, pos=1, goal=0, pexp=1),
     }
     max_speed = 2.
     max_torque = 2.
@@ -421,6 +422,15 @@ class PhaseRN1_NC(PhaseSAG):
         path = RPath1(closed=False)
         super().__init__(path, *args, **kwargs)
 
+class PhaseRN2(PhaseSAG):
+    def __init__(self, *args, **kwargs):
+        path = RPath1(seconds_per_point=4)
+        super().__init__(path, *args, **kwargs)
+
+class PhaseRN2_NC(PhaseSAG):
+    def __init__(self, *args, **kwargs):
+        path = RPath1(seconds_per_point=4, closed=False)
+        super().__init__(path, *args, **kwargs)
 
 # almost the same as a circle :(
 # class TriPhaseSAG(PhaseSAG):
@@ -485,6 +495,8 @@ _ENV_MAP = dict(
     StepsPhase2=StepsPhaseSAG_NC,
     PhaseRN1=PhaseRN1,
     PhaseRN1_NC=PhaseRN1_NC,
+    PhaseRN2=PhaseRN2,
+    PhaseRN2_NC=PhaseRN2_NC,
     # TPhase=TriPhaseSAG,
 )
 
