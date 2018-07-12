@@ -79,7 +79,7 @@ class Walker2DRefEnv(Walker2DEnv):
 
         ref_pose = self.ref.pose_at_time(self.timer)
         self.reset_ref_pose(ref_pose)
-        weights = np.array([10, 0, 2, 1, 1, 1, 1])  # mean actually gives us: [10/7, 0/7, 2/7 ....]
+        weights = np.array([15, 0, 2, 1, 1, 1, 1, 1, 1])  # mean actually gives us: [10/9, 0/9, 2/9 ....]
         diff = np.exp(-1 * (ref_pose - pose) ** 2)
         ref_reward = np.mean(weights * diff)
 
