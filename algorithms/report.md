@@ -4,6 +4,7 @@
   - `🔍🔍🔍` missing saved data
   - `✖` indicates bad result (or failure) in an experiment
   - `✔` indicates good result (or success) in an experiment
+  - `⛳` indicates a really good result in an experiment (a point of comparison)
   - `???` question or wondering: can be the basis of the next experiments
   - `Res` indicates a response (or answer) to a question, most likely an answer found later down the line
   - `⚫⚫⚫` misc
@@ -235,7 +236,7 @@ Jun27_13-26-56: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_laye
 --> increased forward progress reward by 10x
 Jun28_16-25-15: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_layer_size 64 --net_nb_layers 2
 > doesn't seem to learn to hop, just dives forward
-Jun28_16-34-49: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_layer_size 64 --net_nb_layers 2 --gamma 0.995 --gae_lambda 0.97
+(⛳⛳) Jun28_16-34-49: python3 -m algorithms.main --env 'HopperBulletEnv-v0' --net_layer_size 64 --net_nb_layers 2 --gamma 0.995 --gae_lambda 0.97
 > ✔✔✔ It hops, yay! gamma 0.995 gae_lambda 0.97 are great!
 --> γ: 0.99 -> 0.995 | λ: 0.95 -> 0.97 (✔✔✔)
 
@@ -324,14 +325,14 @@ Jun29_cphase_vpred+40xcritic_lr: increasing critic lr from 5x to 40x
 ## 04/07/2018 - Commit c28cf8bfe84467b360cd0a834785932b58097c5f
 
 --> increased max episode length for Walker2D to the original (1000)
-(✔✔) Jul04_15-36-19: batch_size=8000  | γ=0.99 | λ=0.95
+(✔ ) Jul04_15-36-19: batch_size=8000  | γ=0.99 | λ=0.95
 > It's walking, yay!
 Zhaoming ----- increase network size!
-(✔✔) Jul04_16-00-57: batch_size=8000  | γ=0.99 | λ=0.95 | nb_layers=3 | net_layer_size=80
+(✔ ) Jul04_16-00-57: batch_size=8000  | γ=0.99 | λ=0.95 | nb_layers=3 | net_layer_size=80
 > Even faster than Jul04_15-36-19!
 (✖ ) Jul04_16-03-14: batch_size=10000 | γ=0.99 | λ=0.95 | nb_layers=3 | net_layer_size=80
 > somehow this didn't turn out too well, maybe just random noise?
-(  ) Jul05_10-59-53: no advantage normalization (o.w. same as Jul04_16-00-57)
+(⛳⛳) Jul05_10-59-53: no advantage normalization (o.w. same as Jul04_16-00-57)
 > worked better than Jul04_16-00-57!
 (  ) Jul05_11-01-46: higher gamma  γ=0.995      (o.w. same as Jul04_16-00-57)
 > doesn't work as well, but may be due to higher variance of total return (larger γ means larger discounted return)
@@ -388,23 +389,37 @@ Jul09_17-15-28: SqPhase2
 
 ⇒⇒⇒ the same but with more powerful actors (`net_nb_layers=2`):
 ⚫⚫⚫ python3 -m algorithms.main --env <env> --env_reward_style distexp --net_nb_layers 2 --env_max_steps 500 --batch_size 8000
-Jul06_17-29-33: CPhase2
-Jul09_19-21-44: LPhase2
-Jul09_19-22-10: LPhase3
-Jul09_19-22-24: SqPhase1
-Jul09_19-22-35: SqPhase2
-Jul10_10-40-14: StepsPhase1
-Jul10_10-41-55: StepsPhase2
+(⛳) Jul06_17-29-33: CPhase2
+(⛳) Jul09_19-21-44: LPhase2
+(⛳) Jul09_19-22-10: LPhase3
+(⛳) Jul09_19-22-24: SqPhase1
+(⛳) Jul09_19-22-35: SqPhase2
+(⛳) Jul10_10-40-14: StepsPhase1
+(⛳) Jul10_10-41-55: StepsPhase2
 > non-linear actors are all better (using these as reference and making a video)
 ⇒⇒⇒ trying harder environments
-Jul10_12-40-43: PhaseRN1
+(  ) Jul10_12-40-43: PhaseRN1
 > not good, just barely follows the bottom part of the path
-Jul10_12-41-04: PhaseRN1_NC
+(  ) Jul10_12-41-04: PhaseRN1_NC
 > not good but interesting: just tries to get the stationary point right and gets decent reward! (+ maybe the reward scheme is not good)
 
-Jul10_14-15-14: PhaseRN2
-Jul10_14-15-34: PhaseRN2_NC
+(  ) Jul10_14-15-14: PhaseRN2
+(  ) Jul10_14-15-34: PhaseRN2_NC
 
 ⇒⇒⇒ other env reward styles
-Jul10_14-42-12: distsq
-Jul10_14-57-19: velocity
+(  ) Jul10_14-42-12: distsq
+(  ) Jul10_14-57-19: velocity
+(⛳) Jul10_15-03-26: distsq+e
+
+
+## Reference based motion with Walker2D
+
+⇒⇒⇒ tried using Ben's walker environments, but it seems like the power is not tuned correctly (jump too high)
+Jul11_15-42-25: power=0.40
+Jul11_16-22-36: power=0.01
+Jul11_16-30-43: power=0.02
+Jul11_16-31-10: power=0.04
+Jul11_17-16-04: power=0.08
+⇒⇒⇒ giving up, maybe it's better to use the PyBullet original envs
+⚫⚫⚫ python3 -m algorithms.main --env 'Walker2DEnv-v0' --net_layer_size 80 --net_nb_layers 3  --batch_size 8000
+Jul12_11-35-39: just a re-run of Jul05_16-08-31 and Jul05_10-59-53 (used 4x progress reward + power=0.40)

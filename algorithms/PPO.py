@@ -220,7 +220,10 @@ class PPO(object):
 
             state_p, rew, done, extra = self.env.step(act)
             if 'rewards' in extra:
-                rews.append(extra['rewards'])
+                if isinstance(extra['rewards'], dict):
+                    rews.append(list(extra['rewards'].values()))
+                else:
+                    rews.append(extra['rewards'])
             # print('\r%5.2f' % _rew, end='')
 
             mem.record(state, act, rew, state_p)

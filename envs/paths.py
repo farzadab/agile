@@ -2,10 +2,10 @@
 Simple kinematic paths to follow
 '''
 import numpy as np
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import CubicSpline, interp1d
 
 class PhasePath(object):
-    'Abstract class that defines a kinematic path'
+    'Abstract class that defines a kinematic path dependent on phase'
     def duration(self):
         '''
         @returns a floating point value, determining the duration of the whole path
@@ -17,6 +17,15 @@ class PhasePath(object):
         @returns x(ϕ): the position at time
         '''
         raise NotImplementedError
+
+class TimePath(object):
+    'Abstract class that defines a kinematic path dependent on time'
+    def pose_at_time(self, time):
+        '''
+        @returns x(t): the position at time
+        '''
+        raise NotImplementedError
+
 
 class CircularPath(PhasePath):
     'Circular Kinematic path'
@@ -55,6 +64,46 @@ class DiscretePath(PhasePath):
         pb = self.points[seg_index+1]
         seg_phase = phase * self.num_segments - seg_index
         return seg_phase * pb + (1-seg_phase) * pa
+
+
+class RepeatingPath(TimePath):
+    def __init__(self, duration, points, periodic):
+        '''
+        @param duration: the duration of one cycle (going through all points)
+        @param points: the set of data points
+        @param periodic: a boolean vector indicating which indices are periodic
+        '''
+        # np.invert
+        self.periodic = np.array(periodic, dtype=np.bool)
+        self.duration = duration
+        points = np.array(points)
+        self.num_segments = points.shape[0]-1
+        times = [i*self.duration/self.num_segments for i in range(self.num_segments+1)]
+        self.acyclic_diff = (points[-1,:] - points[0,:])[np.invert(self.periodic)]
+        self.acyclic_sp = interp1d(
+            times,
+            points[:, np.invert(self.periodic)],
+            axis=0,
+            fill_value='extrapolate',  # this shouldn't be needed
+        )
+        self.cyclic_sp = CubicSpline(
+            times,
+            points[:, self.periodic],
+            axis=0,
+            bc_type='periodic',
+            extrapolate='periodic',
+        )
+
+    def one_cycle_duration(self):
+        return self.duration
+
+    def pose_at_time(self, time):
+        pose = np.zeros(self.periodic.shape)
+        pose[self.periodic] = self.cyclic_sp(time)
+        cycle_num = np.floor(time / self.duration)
+        phase = time - cycle_num * self.duration
+        pose[np.invert(self.periodic)] = self.acyclic_sp(phase) + cycle_num * self.acyclic_diff
+        return pose
 
 
 class LineBFPath(DiscretePath):

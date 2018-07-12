@@ -6,10 +6,12 @@ import copy
 import gym
 import pybullet_envs
 
+import cust_envs
+
 from algorithms.plot import ScatterPlot, QuiverPlot, Plot
 from core.object_utils import ObjectWrapper
 from algorithms.normalization import NormalizedEnv
-from env.paths import CircularPath, LineBFPath, DiscretePath, RPath1
+from envs.paths import CircularPath, LineBFPath, DiscretePath, RPath1
 
 class PointMass(gym.Env):
     '''

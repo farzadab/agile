@@ -20,7 +20,7 @@ TODO PPO:
     roadmap Michiel:
         ☐ multiprocessing @medium
         ✔ PointMass to follow circle/trajectory based on phase alone @done(18-06-28 10:51)
-        ☐ PointMass to follow impossible look-ahead trajectory
+        ✔ PointMass to follow impossible look-ahead trajectory @done(18-07-11 13:54)
 
     experiments:
         ☐ validation criteria: reached as extra dict?

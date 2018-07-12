@@ -1,6 +1,6 @@
 import numpy as np
 import gym
-from cust_envs.envs import Crab2DCustomEnv
+import cust_envs
 from pybullet_envs.gym_locomotion_envs import HalfCheetahBulletEnv
 from gym.envs.registration import registry, make, spec
 
