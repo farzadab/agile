@@ -49,11 +49,18 @@ class Walker2DRefEnv(Walker2DEnv):
         self.timer += self.scene.dt
         obs, rew, done, extra = super()._step(action)
         pose = self.get_stationary_pose()
+
         ref_pose = self.ref.pose_at_time(self.timer)
         ref_cost = np.exp(-np.mean((ref_pose - pose) ** 2))
+
+        rew += ref_cost
+
         rewards = extra.get('rewards', {})
         rewards['ref_motion'] = ref_cost
         extra['rewards'] = rewards
+
+        rew += 3 * rewards['progress']
+
         return obs, rew, done, extra
 
 
