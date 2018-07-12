@@ -194,17 +194,3 @@ class WalkerBaseBulletEnv(MJCFBaseBulletEnv):
         # self.camera.move_and_look_at(self.camera_x, y - 2.0, 1.4, x, y, 1.0)
         lookat = [x, y, z]
         self._p.resetDebugVisualizerCamera(distance, yaw, -20, lookat)
-    
-    def get_stationary_pose(self):
-        return np.concatenate([
-            self.robot_body.current_position(),
-            [joint.get_position() for joint in self.robot.ordered_joints],
-        ])
-    
-    def reset_stationary_pose(self, root_position, joint_positions):
-        assert(len(self.robot.ordered_joints) == len(joint_positions))
-
-        self.robot_body.reset_pose(root_position, [0, 0, 0, 1])
-        self.robot.body_xyz = root_position
-        for i, joint in enumerate(self.robot.ordered_joints):
-            joint.reset_position(joint_positions[i], 0)

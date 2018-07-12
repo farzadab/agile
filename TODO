@@ -16,6 +16,9 @@ TODO PPO:
         ✔ Hopper @done(18-06-28 17:51)
         ✔ Walker2D @started(18-06-29 11:00) @done(18-07-04 16:19) @lasted(5d5h19m9s)
         ☐ crab
+        ☐ Walker2DRef @started(18-07-12 13:02)
+            ☐ initial velocity
+            ☐ track reference velocity
 
     roadmap Michiel:
         ☐ multiprocessing @medium
