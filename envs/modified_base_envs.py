@@ -3,6 +3,8 @@ A modified version of `WalkerBaseBulletEnv` from: https://github.com/bulletphysi
 '''
 import pybullet
 import numpy as np
+from collections import OrderedDict
+
 from pybullet_envs.scene_stadium import SinglePlayerStadiumScene
 from pybullet_envs.env_bases import MJCFBaseBulletEnv
 
@@ -151,12 +153,12 @@ class WalkerBaseBulletEnv(MJCFBaseBulletEnv):
             joints_at_limit_cost,
         ]
 
-        rewards_dict = {
-            'alive': alive,
-            'progress': progress,
-            'electricity': electricity_cost,
-            'joints_at_limit': joints_at_limit_cost,
-        }
+        rewards_dict = OrderedDict([
+            ('alive', alive),
+            ('progress', progress),
+            ('electricity', electricity_cost),
+            ('joints_at_limit', joints_at_limit_cost),
+        ])
 
         if debugmode:
             print("rewards=")
