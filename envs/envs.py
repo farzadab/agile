@@ -43,8 +43,9 @@ class Walker2DRefEnv(Walker2DEnv):
         return ret
     
     def reset_ref_pose(self, pose):
-        pose[1] = 1
-        self.ref_robot.reset_stationary_pose(pose[:3], pose[3:])
+        if self.isRender:
+            pose[1] = 1
+            self.ref_robot.reset_stationary_pose(pose[:3], pose[3:])
 
     def reset_stationary_pose(self, pose):
         self.robot.reset_stationary_pose(pose[:3], pose[3:])
@@ -53,8 +54,9 @@ class Walker2DRefEnv(Walker2DEnv):
     def _reset(self):
         super()._reset()
         # self._p.setGravity(0.0,0.0,0.0)
-        self.ref_robot.scene = self.scene
-        self.ref_robot.reset(self._p)
+        if self.isRender:
+            self.ref_robot.scene = self.scene
+            self.ref_robot.reset(self._p)
 
         if not self.correct_state_id:
             self.stateId = self._p.saveState()
