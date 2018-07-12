@@ -77,15 +77,17 @@ class Walker2DRefEnv(Walker2DEnv):
 
         ref_pose = self.ref.pose_at_time(self.timer)
         self.reset_ref_pose(ref_pose)
-        ref_reward = np.exp(-np.mean((ref_pose - pose) ** 2))
-        
+        weights = np.array([10, 0, 2, 1, 1, 1, 1])  # mean actually gives us: [10/7, 0/7, 2/7 ....]
+        diff = np.exp(-1 * (ref_pose - pose) ** 2)
+        ref_reward = np.mean(weights * diff)
+
         rew += ref_reward
 
         rewards = extra.get('rewards', {})
         rewards['ref_pose'] = ref_reward
         extra['rewards'] = rewards
 
-        rew += 3 * rewards['progress']
+        rew += -1 * rewards['progress']
         rewards['progress'] *= 3
 
         return obs, rew, done, extra
