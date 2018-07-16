@@ -105,7 +105,7 @@ class Walker2DRefEnv(Walker2DEnv):
         vel = self.ref.vel_at_time(self.timer)
         self.reset_stationary_pose(pose, vel)
 
-        return self.robot.calc_state()
+        return self.get_obs_with_phase()
     
     def get_reward(self, state, action):
         # weights = np.array([15, 0, 2, 1, 1, 1, 1, 1, 1])  # mean actually gives us: [10/9, 0/9, 2/9 ....]
@@ -127,6 +127,12 @@ class Walker2DRefEnv(Walker2DEnv):
         self.rewards['progress'] *= 4
 
         return rew
+    
+    def get_obs_with_phase(self, robot_state=None):
+        if robot_state is None:
+            robot_state = self.robot.calc_state()
+        phase = self.timer % self.ref.one_cycle_duration()
+        return np.concatenate(robot_state, [phase])
 
     def _step(self, action):
         self.timer += self.scene.dt
@@ -139,7 +145,7 @@ class Walker2DRefEnv(Walker2DEnv):
         rew = self.get_reward(obs, action)
         extra['rewards'] = self.rewards
 
-        return obs, rew, done, extra
+        return self.get_obs_with_phase(obs), rew, done, extra
 
 
 class Walker2DRefEnvDM(Walker2DRefEnv):
