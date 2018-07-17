@@ -75,7 +75,6 @@ class NormalizedEnv(ObjectWrapper):
         @param gamma: the discount factor (γ), used to normalized the rewards. Default: no normalization
         '''
         super().__init__(env)
-        self.naaa = 'normalizedEnv'
         self.gamma = gamma
         self.norm_stt = Stats(
             input_size=env.observation_space.shape[0],

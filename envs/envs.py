@@ -1,33 +1,45 @@
 import numpy as np
 from collections import OrderedDict
+import gym
 import copy
 
-from .robots import Walker2D, Walker2DNoMass
+from .robots import WalkerV2, Walker2DNoMass, Walker2DPD, FixedWalker
 from .modified_base_envs import WalkerBaseBulletEnv
-from .walker_paths import WalkingPath
+from .walker_paths import WalkingPath, FastWalkingPath
 from .paths import RefMotionStore
 
 
 class Walker2DEnv(WalkerBaseBulletEnv):
-    def __init__(self):
-        self.robot = Walker2D()
+    def __init__(self, robot=None):
+        self.robot = WalkerV2() if robot is None else robot
         WalkerBaseBulletEnv.__init__(self, self.robot)
 
 
 class Walker2DRefEnv(Walker2DEnv):
-    def __init__(self, rsi=True, ref=WalkingPath):
+    default_store_fname = 'walker.json'
+    def __init__(self, rsi=True, ref=WalkingPath, robot=None):
         '''
         @param rsi: whether or not to do Random-Start-Initialization (default: True)
         '''
         self.timer = 0
         self.rsi = rsi
         self.ref_robot = Walker2DNoMass()
-        super().__init__()
+        super().__init__(robot=robot)
         self.ref = ref
         self.correct_state_id = False
+        high = self.observation_space.high
+        low = self.observation_space.low
+        self.observation_space = gym.spaces.Box(
+            np.concatenate([low, [0]]),
+            np.concatenate([high, [self.ref.one_cycle_duration()]]),
+            dtype=np.float32,
+        )
 
-    def play_path(self, timesteps=None, store_fname='walker.json'):
+    def play_path(self, timesteps=None, store_fname=None):
         'Replays the reference trajectory + can store the data for later use'
+        if store_fname is None:
+            store_fname = self.default_store_fname
+
         import time
         self._reset()
 
@@ -132,11 +144,14 @@ class Walker2DRefEnv(Walker2DEnv):
         if robot_state is None:
             robot_state = self.robot.calc_state()
         phase = self.timer % self.ref.one_cycle_duration()
-        return np.concatenate(robot_state, [phase])
+        return np.concatenate([robot_state, [phase]])
+    
+    def action_transform(self, action):
+        return action
 
     def _step(self, action):
         self.timer += self.scene.dt
-        obs, _, done, extra = super()._step(action)
+        obs, _, done, extra = super()._step(self.action_transform(action))
         self.rewards = extra.get('rewards', {})
 
         ref_pose = self.ref.pose_at_time(self.timer)
@@ -155,8 +170,12 @@ class Walker2DRefEnvDM(Walker2DRefEnv):
     r_names = ['jpos', 'jvel', 'ee', 'com']
     r_weights = dict(jpos=0.65, jvel=0.1, ee=0.15, com=0.1 )
     r_scales  = dict(jpos=2   , jvel=0.1, ee=40/3, com=10/3)
-    def __init__(self, store_fname='walker.json', **kwargs):
-        super().__init__(ref=RefMotionStore().load(store_fname), **kwargs)
+    def __init__(self, store_fname=None, ref=None, **kwargs):
+        if store_fname is None:
+            store_fname = self.default_store_fname
+        if ref is None:
+            ref = RefMotionStore().load(store_fname)
+        super().__init__(ref=ref, **kwargs)
 
     def cur_motion_params(self):
         return {
@@ -170,9 +189,10 @@ class Walker2DRefEnvDM(Walker2DRefEnv):
         targets = self.ref.ref_at_time(self.timer)
         current = self.cur_motion_params()
         self.rewards = OrderedDict([
-            (param, np.exp(-1 * self.r_scales[param] * np.sum(np.square(
-                np.subtract(targets[param], current[param])
-            )))) for param in self.r_names
+            (param, np.exp(
+                -1 * self.r_scales[param] * np.sum(np.square(
+                    np.subtract(targets[param], current[param])
+                )))) for param in self.r_names
         ])
         # print(current['jpos'], targets['jpos'], self.rewards['jpos'])
         # print(current['ee'], targets['ee'], self.rewards['ee'])
@@ -182,7 +202,22 @@ class Walker2DRefEnvDM(Walker2DRefEnv):
         return sum([self.r_weights[param] * self.rewards[param] for param in self.r_names])
 
 
+class FastWalker2DRefEnvDM(Walker2DRefEnvDM):
+    default_store_fname = 'fast_walker.json'
+
+
+class Walker2DPDRefEnvDM(Walker2DRefEnvDM):
+    def __init__(self):
+        super().__init__(robot=Walker2DPD())
+
+
+class FixedWalkerRefEnvDM(Walker2DRefEnvDM):
+    r_names = ['jpos', 'jvel']
+    def __init__(self):
+        super().__init__(robot=FixedWalker())
+
+
 if __name__ == '__main__':
-    env = Walker2DRefEnv()
+    env = FastWalker2DRefEnvDM()
     env.render('human')
     env.play_path()

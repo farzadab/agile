@@ -16,3 +16,5 @@ data = [
 
 WalkingPath = RepeatingPath(2, data, [0, 1, 1, 1, 1, 1, 1, 1, 1])
 
+FastWalkingPath = RepeatingPath(1, data, [0, 1, 1, 1, 1, 1, 1, 1, 1])
+

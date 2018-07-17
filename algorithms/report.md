@@ -423,3 +423,48 @@ Jul11_17-16-04: power=0.08
 ⇒⇒⇒ giving up, maybe it's better to use the PyBullet original envs
 ⚫⚫⚫ python3 -m algorithms.main --env 'Walker2DEnv-v0' --net_layer_size 80 --net_nb_layers 3  --batch_size 8000
 Jul12_11-35-39: just a re-run of Jul05_16-08-31 and Jul05_10-59-53 (used 4x progress reward + power=0.40)
+⇒⇒⇒ (✖✖) more experiments, but no sucess (Jul12): all just try to stay still and do nothing
+
++++ added Walker2DRefEnvDM-v0 environment that uses `exp(-dist)` rewards with weights from DeepMimic paper
+⇒⇒⇒ (✖✖) more experiments, but no sucess
+Jul13_13-44-52: first try
+Jul13_15-21-11: r_scales = dict(jpos=2 , jvel=0.5, ee=5 , com=2)
+Jul13_15-44-22: r_scales = dict(jpos=2 , jvel=0.1, ee=40/3, com=10/3) ++ np.sum instead of np.mean ++ fix_y
+Jul13_16-05-00: r_scales = dict(jpos=2 , jvel=0.1, ee=40/3, com=10/3) ++ np.sum instead of np.mean ++ fix_y ++ velocity reset
+
++++ remembered to include **Phase** in the state
+Jul16_10-35-28: first try with phase
+--> max_episode_steps=200
+Jul16_10-40-39: just max_episode_steps=200
+Jul16_11-45-23: FastWalker2DRefEnvDM-v0
+
+??? what is missing? maybe: PD, better early termination, PD-residual, better reference motion (probably not?), implicit alive_bonus, ...
+
+--> adding a constant cost (alive_cost?) to make it not want to stay still (all with max_episode)
+Jul16_12-22-18: alive_cost=-0.85   calculated the value from the reward that Jul16_10-40-39 gets (wrong calculcation)
+Jul16_12-26-57: alive_cost=-0.175  fixed calculations (hadn't considered the weights before)
+
++++ PD-controllers (haven't tuned the gains)
+Jul16_13-25-23: simple PD with kp=kd=5
+
+??? what if the network size is really important? (probably not ...)
+Jul16_14-31-06: net_layer_size=512 net_nb_layers=2 (max_episode_steps=1000, so normal)
+
+Michiel  -----  try a simpler example!
+(✖✖) Jul16_15-42-58: Walker2DRef with fixed base and only jpos reward
+> was learning something at first (iter 10-20) but now (iter 60) it is just doing a mean pose :(
+(  ) Jul16_16-18-32: same as above ++ with **distsq** cost instead of exp[-distsq] reward (for some reason the episode length for this was 200 instead of 1000)
+(  ) Jul16_16-48-40: same as above ++ only for **one leg**
+(  ) Jul16_16-59-53: same as above ++ both distsq and exp **rewards**
+
++++ modified the range of movement for the walker2d (gotta do it in a new file ...)
+(✔  ) Jul16_18-44-21: FixedWalkerRefEnvDM-v0 with (distsq+exp reward for one leg)
+(✔  ) Jul17_10-45-00: same (distsq reward for one leg)
+(⛳  ) Jul17_10-45-56: same (exp reward for one leg)
+> all of them can track the trajectory a lot better!
+> probably the best is just the `exp` reward (dists+exp is similar, but simpler is always better)
+> it takes all of them 100-150 iterations to get close to the final reward
+(✖ ) Jul17_12-28-06: (distsq+exp reward for both feet, jpos+jvel)
+(✔ ) Jul17_12-29-22: (exp reward for both feet, jpos+jvel)
+
+⇒⇒⇒ just going with the basic `exp` reward

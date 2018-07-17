@@ -73,7 +73,12 @@ class Walker2D(WalkerBase):
             joint.reset_position(joint_positions[i], joint_velocities[i])
 
 
-class Walker2DNoMass(Walker2D):
+class WalkerV2(Walker2D):
+    '''Walker2D with fixed thigh joint ranges'''
+    model_filename = 'models/walker_v2.xml'
+
+
+class Walker2DNoMass(WalkerV2):
     def __init__(self):
         super().__init__()
 
@@ -81,3 +86,38 @@ class Walker2DNoMass(Walker2D):
         super().reset(bullet_client)
         for part in self.parts.values():
             bullet_client.changeDynamics(part.bodies[part.bodyIndex], part.bodyPartIndex, mass=0)
+
+
+class Walker2DPD(WalkerV2):
+    def apply_action(self, a):
+        kp = 5
+        kd = 5
+        joint_pose = np.array(
+            [j.current_relative_position() for j in self.ordered_joints],
+            dtype=np.float32
+        )
+        action = kp * (a - joint_pose[:, 0]) - kd * joint_pose[:, 1]
+        super().apply_action(action)
+
+
+class FixedWalker(WalkerV2):
+    model_filename = "models/fixed_walker.xml"
+
+    def reset_stationary_pose(self, root_position, joint_positions, root_velocity=[0, 0, 0], joint_velocities=None):
+        assert len(self.ordered_joints) == len(joint_positions)
+
+        joint_velocities = [0] * len(joint_positions)
+
+        root_position[2] += 0.4
+        root_position[0] = 0
+        self.robot_body.reset_velocity(linearVelocity=[0, 0, 0])
+
+        self.robot_body.reset_pose(root_position, [0, 0, 0, 1])
+        self.body_xyz = root_position
+
+        for part in self.parts.values():
+            part.reset_velocity()
+
+        for i, joint in enumerate(self.ordered_joints):
+            joint.reset_position(joint_positions[i], joint_velocities[i])
+
