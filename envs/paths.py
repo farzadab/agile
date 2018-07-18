@@ -216,14 +216,17 @@ class RefMotionStore(object):
     def vel_at_time(self, time):
         data = self.path.vel_at_time(time)
         return data[np.concatenate([self.com_pos_ind, self.j_pos_ind])]
-    
+
     def ref_at_time(self, time):
         data = self.path.pose_at_time(time)
+        v_data = self.path.vel_at_time(time)
         return {
             'jpos': data[self.j_pos_ind],
             'jvel': data[self.j_vel_ind],
             'ee': data[self.ee_pos_ind],
-            'com': data[self.com_pos_ind],
+            'torso': data[self.com_pos_ind],
+            'torso_z': data[self.com_pos_ind][2],
+            'torso_v': v_data[self.com_pos_ind],
         }
 
     def load(self, file_name):

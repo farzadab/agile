@@ -40,10 +40,13 @@ class Walker2D(WalkerBase):
             self.get_joint_positions(),
         ])
 
-    def get_com_position(self):
-        com = self.robot_body.current_position()
-        com[2] -= self.initial_z
-        return com
+    def get_torso_position(self):
+        torso = self.robot_body.current_position()
+        torso[2] -= self.initial_z
+        return torso
+    
+    def get_torso_velocity(self):
+        return self.robot_body.speed()
 
     def get_joint_positions(self):
         return [joint.get_position() for joint in self.ordered_joints]
@@ -61,15 +64,16 @@ class Walker2D(WalkerBase):
 
         if joint_velocities is None:
             joint_velocities = [0] * len(joint_positions)
-        
+
+        for part in self.parts.values():
+            part.reset_velocity()
+
         # root_position[2] += 0.5j.current_relative_position()
 
         self.robot_body.reset_pose(root_position, [0, 0, 0, 1])
         self.robot_body.reset_velocity(linearVelocity=root_velocity)
         self.body_xyz = root_position
 
-        for part in self.parts.values():
-            part.reset_velocity()
 
         for i, joint in enumerate(self.ordered_joints):
             joint.reset_position(joint_positions[i], joint_velocities[i])

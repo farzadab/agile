@@ -174,9 +174,9 @@ class Walker2DRefEnvDM(Walker2DRefEnv):
     '''
     Walker2DRef environment with the corrected rewards
     '''
-    r_names = ['jpos', 'jvel', 'ee', 'com']
-    r_weights = dict(jpos=0.65, jvel=0.1, ee=0.15, com=0.1 )
-    r_scales  = dict(jpos=2   , jvel=0.1, ee=40/3, com=10/3)
+    r_names = ['jpos', 'jvel', 'ee', 'torso_z', 'torso_v']
+    r_weights = dict(jpos=0.65, jvel=0.1, ee=0.1 , torso_z=0.075, torso_v=0.075)
+    r_scales  = dict(jpos=2   , jvel=0.1, ee=40/3, torso_z=10/3 , torso_v=10/3 )
     def __init__(self, store_fname=None, ref=None, **kwargs):
         if store_fname is None:
             store_fname = self.default_store_fname
@@ -185,11 +185,14 @@ class Walker2DRefEnvDM(Walker2DRefEnv):
         super().__init__(ref=ref, **kwargs)
 
     def cur_motion_params(self):
+        torso_p = self.robot.get_torso_position()
         return {
             'jpos': self.robot.get_joint_positions(),
             'jvel': self.robot.get_joint_velocities(),
             'ee': self.robot.get_end_eff_positions(),
-            'com': self.robot.get_com_position(),
+            'torso': torso_p,
+            'torso_z': torso_p[2],
+            'torso_v': self.robot.get_torso_velocity(),
         }
 
     def get_reward(self, state, action):
@@ -207,7 +210,8 @@ class Walker2DRefEnvDM(Walker2DRefEnv):
         # print(current['jpos'], targets['jpos'], self.rewards['jpos'])
         # print(current['ee'], targets['ee'], self.rewards['ee'])
         # print(current['jvel'], targets['jvel'], self.rewards['jvel'])
-        # print(current['com'], targets['com'], self.rewards['com'])
+        # print(current['torso'], targets['torso'], self.rewards['torso'])
+        # print(current['torso_v'], targets['torso_v'], self.rewards['torso_v'])
         # print(self.rewards.values())
         return sum([self.r_weights[param] * self.rewards[param] for param in self.r_names])
 

@@ -478,6 +478,7 @@ Michiel  -----  try a simpler example!
 (✖ ) Jul17_17-49-25: ep_length=200 ++ ET ++ only jpos reward
 (✖ ) Jul17_17-50-15: ep_length=200 ++ ET ++ only ee reward
 
+## 18/07/2018 - Commit f2cc3c9a41bbc87cff52fb958eb40e628f107b7c
 Zhaoming  -----  terminate episode based on low reward!
 
 (✔ ) Jul18_11-25-39: ET with reward < 0.1
@@ -488,6 +489,7 @@ Zhaoming  -----  terminate episode based on low reward!
 (✖ ) Jul18_14-12-42: ET with reward < 0.05
 > still can't take the second step
 ⇒⇒⇒ yay, getting there!
+
 
 Michiel  -----  instead of matching CoM position, only match the height of torso and CoM velocity
 Michiel  -----  use PD and higher control time-step
