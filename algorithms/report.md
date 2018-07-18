@@ -468,3 +468,26 @@ Michiel  -----  try a simpler example!
 (✔ ) Jul17_12-29-22: (exp reward for both feet, jpos+jvel)
 
 ⇒⇒⇒ just going with the basic `exp` reward
+(✖ ) Jul17_14-21-53: test Walker2DRefEnvDM-v0 with fixed thigh joint ranges
+> just stays still but tries to immitate jpos and jvel in place a little bit
+> interesting: in the beginning, the policy would do a cyclic motion with the feet if it was lifted off the ground!
+(✖ ) Jul17_16-35-53: same ++ max_episode_length=200 ++ r_weights = dict(jpos=0.15, jvel=0.1, ee=0.15, com=0.6 )
+> tries to move torso forward in-place ...
+(✖ ) Jul17_17-00-34: same ++ no early termination (ET)
+> extensive movement of torso forward (gives horizontal torso)
+(✖ ) Jul17_17-49-25: ep_length=200 ++ ET ++ only jpos reward
+(✖ ) Jul17_17-50-15: ep_length=200 ++ ET ++ only ee reward
+
+Zhaoming  -----  terminate episode based on low reward!
+
+(✔ ) Jul18_11-25-39: ET with reward < 0.1
+> yay, it takes some (2-5) steps before falling
+(✖ ) Jul18_13-16-59: fast walker and ET with reward < 0.1
+(✔ ) Jul18_13-17-56: PD walker and ET with reward < 0.1
+> a little worse than Jul18_11-25-39 (jittery) but close
+(✖ ) Jul18_14-12-42: ET with reward < 0.05
+> still can't take the second step
+⇒⇒⇒ yay, getting there!
+
+Michiel  -----  instead of matching CoM position, only match the height of torso and CoM velocity
+Michiel  -----  use PD and higher control time-step

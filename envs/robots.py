@@ -61,6 +61,8 @@ class Walker2D(WalkerBase):
 
         if joint_velocities is None:
             joint_velocities = [0] * len(joint_positions)
+        
+        # root_position[2] += 0.5j.current_relative_position()
 
         self.robot_body.reset_pose(root_position, [0, 0, 0, 1])
         self.robot_body.reset_velocity(linearVelocity=root_velocity)
@@ -77,6 +79,9 @@ class WalkerV2(Walker2D):
     '''Walker2D with fixed thigh joint ranges'''
     model_filename = 'models/walker_v2.xml'
 
+    # def alive_bonus(self, z, pitch):
+    #     return 1
+
 
 class Walker2DNoMass(WalkerV2):
     def __init__(self):
@@ -89,14 +94,14 @@ class Walker2DNoMass(WalkerV2):
 
 
 class Walker2DPD(WalkerV2):
+    kp = 15
+    kd = 15
     def apply_action(self, a):
-        kp = 5
-        kd = 5
         joint_pose = np.array(
             [j.current_relative_position() for j in self.ordered_joints],
             dtype=np.float32
         )
-        action = kp * (a - joint_pose[:, 0]) - kd * joint_pose[:, 1]
+        action = self.kp * (a - joint_pose[:, 0]) - self.kd * joint_pose[:, 1]
         super().apply_action(action)
 
 

@@ -17,12 +17,16 @@ class Walker2DEnv(WalkerBaseBulletEnv):
 
 class Walker2DRefEnv(Walker2DEnv):
     default_store_fname = 'walker.json'
-    def __init__(self, rsi=True, ref=WalkingPath, robot=None):
+    def __init__(self, rsi=True, ref=WalkingPath, robot=None, et_rew=0.1):
         '''
         @param rsi: whether or not to do Random-Start-Initialization (default: True)
+        @param ref: the reference (kinematic) motion
+        @param robot: the model to use in simulation
+        @param et_rew: the reward threshold used for early termination. set `et_rew=1` to get rid of it
         '''
         self.timer = 0
         self.rsi = rsi
+        self.et_rew = et_rew
         self.ref_robot = Walker2DNoMass()
         super().__init__(robot=robot)
         self.ref = ref
@@ -160,6 +164,9 @@ class Walker2DRefEnv(Walker2DEnv):
         rew = self.get_reward(obs, action)
         extra['rewards'] = self.rewards
 
+        if rew < self.et_rew:
+            done = True
+
         return self.get_obs_with_phase(obs), rew, done, extra
 
 
@@ -189,16 +196,19 @@ class Walker2DRefEnvDM(Walker2DRefEnv):
         targets = self.ref.ref_at_time(self.timer)
         current = self.cur_motion_params()
         self.rewards = OrderedDict([
-            (param, np.exp(
-                -1 * self.r_scales[param] * np.sum(np.square(
-                    np.subtract(targets[param], current[param])
-                )))) for param in self.r_names
+            (param,
+                np.exp(
+                    -1 * self.r_scales[param] * np.sum(np.square(
+                        np.subtract(targets[param], current[param])
+                    ))
+                )
+            ) for param in self.r_names
         ])
         # print(current['jpos'], targets['jpos'], self.rewards['jpos'])
         # print(current['ee'], targets['ee'], self.rewards['ee'])
         # print(current['jvel'], targets['jvel'], self.rewards['jvel'])
         # print(current['com'], targets['com'], self.rewards['com'])
-        # print(self.rewards)
+        # print(self.rewards.values())
         return sum([self.r_weights[param] * self.rewards[param] for param in self.r_names])
 
 
@@ -218,6 +228,15 @@ class FixedWalkerRefEnvDM(Walker2DRefEnvDM):
 
 
 if __name__ == '__main__':
-    env = FastWalker2DRefEnvDM()
+    # env = FastWalker2DRefEnvDM()
+    env = Walker2DRefEnvDM()
     env.render('human')
     env.play_path()
+    # env = Walker2DPDRefEnvDM()
+    # env.render('human')
+    # import time
+    # env._reset()
+    # env._p.setGravity(0.0,0.0,0.0)
+    # for i in range(1000):
+    #     env._step(env.ref.pose_at_time(env.timer)[3:])
+    #     time.sleep(env.scene.dt)
