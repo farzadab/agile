@@ -482,10 +482,8 @@ class MultiStepEnv(ObjectWrapper):
             obs, reward, done, extra = self.__wrapped__.step(action)
             total_reward += reward
 
-            if self.__rendering__ and \
-                    hasattr(self.__wrapped__, 'scene') and hasattr(self.__wrapped__.scene, 'dt') and \
-                    i != self.nb_steps-1:
-                time.sleep(self.__wrapped__.scene.dt)
+            if self.__rendering__ and hasattr(self.__wrapped__, 'dt') and i != self.nb_steps-1:
+                time.sleep(self.__wrapped__.dt)
 
             if done:
                 break

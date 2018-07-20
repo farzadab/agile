@@ -2,6 +2,7 @@
 Contains the specifications for the robots used in environments
 '''
 import numpy as np
+import copy
 import os
 
 from .robot_locomotors import WalkerBase
@@ -15,8 +16,9 @@ class Walker2D(WalkerBase):
     Just the 2D Walker model from PyBullet:
     https://github.com/bulletphysics/bullet3/blob/master/examples/pybullet/gym/pybullet_envs/robot_locomotors.py
     '''
-    foot_list = ["foot", "foot_left"]
+    ee_names = foot_list = ["foot", "foot_left"]
     model_filename = "models/walker2d.xml"
+    pelvis_partname = 'link0_6'
 
     def __init__(self):
         self.end_effector_names = self.foot_list
@@ -36,17 +38,21 @@ class Walker2D(WalkerBase):
 
     def get_stationary_pose(self):
         return np.concatenate([
-            self.get_com_position(),
+            self.get_pelvis_position(),
             self.get_joint_positions(),
         ])
 
-    def get_torso_position(self):
-        torso = self.robot_body.current_position()
-        torso[2] -= self.initial_z
-        return torso
-    
-    def get_torso_velocity(self):
-        return self.robot_body.speed()
+    def get_pelvis_position(self):
+        return self.pelvis.current_position()
+
+    def reset(self, bullet_client):
+        super().reset(bullet_client)
+        self.pelvis = self.parts[self.pelvis_partname]
+        self.correction = np.array(self.robot_body.current_position() - self.pelvis.current_position())
+        self.correction[2] -= self.initial_z
+
+    def get_pelvis_velocity(self):
+        return self.pelvis.speed()
 
     def get_joint_positions(self):
         return [joint.get_position() for joint in self.ordered_joints]
@@ -55,12 +61,15 @@ class Walker2D(WalkerBase):
         return [joint.get_velocity() for joint in self.ordered_joints]
 
     def get_end_eff_positions(self):
+        root = self.pelvis.current_position()
         return np.concatenate([
-            self.parts[ee_name].current_position() for ee_name in self.end_effector_names
+            np.subtract(self.parts[ee_name].current_position(), root)
+            for ee_name in self.end_effector_names
         ])
 
     def reset_stationary_pose(self, root_position, joint_positions, root_velocity=[0, 0, 0], joint_velocities=None):
         assert len(self.ordered_joints) == len(joint_positions)
+        # root_position = copy.copy(root_position)
 
         if joint_velocities is None:
             joint_velocities = [0] * len(joint_positions)
@@ -69,11 +78,12 @@ class Walker2D(WalkerBase):
             part.reset_velocity()
 
         # root_position[2] += 0.5j.current_relative_position()
+        # root_position[2] -= self.initial_z
 
-        self.robot_body.reset_pose(root_position, [0, 0, 0, 1])
+        self.pelvis.reset_pose(root_position + self.correction, [0, 0, 0, 1])
+        self.pelvis.reset_velocity(linearVelocity=root_velocity)
         self.robot_body.reset_velocity(linearVelocity=root_velocity)
         self.body_xyz = root_position
-
 
         for i, joint in enumerate(self.ordered_joints):
             joint.reset_position(joint_positions[i], joint_velocities[i])
@@ -133,6 +143,7 @@ class FixedWalker(WalkerV2):
 
 class FixedPDWalker(Walker2DPD):
     model_filename = "models/fixed_walker.xml"
+    pelvis_partname = 'link0_4'
 
     def reset_stationary_pose(self, root_position, joint_positions, root_velocity=[0, 0, 0], joint_velocities=None):
         FixedWalker.reset_stationary_pose(

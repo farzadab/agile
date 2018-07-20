@@ -130,7 +130,7 @@ class RefMotionStore(object):
         - j_pos_ind
         - j_vel_ind
         - ee_pos_ind
-        - com_pos_ind
+        - root_pos_ind
     '''
     store_path = os.path.join(os.path.dirname(__file__), 'ref_data')
     def __init__(self, dt=None, joint_names=[], end_eff_names=[]):
@@ -138,28 +138,26 @@ class RefMotionStore(object):
         self.end_eff_names = end_eff_names
         self.dt = dt       # time-step
         self.j_pos = []    # joint positions (orientations)
-        self.j_vel = []    # joint velocities
-        self.ee_pos = []   # end-effector positions
-        self.com_pos = []  # center-of-mass position
-        self.j_pos_ind, self.j_vel_ind, self.ee_pos_ind, self.com_pos_ind = None, None, None, None
+        self.ee_pos = []   # local (relative to root) end-effector positions
+        self.root_pos = []  # center-of-mass position
+        self.j_pos_ind, self.ee_pos_ind, self.root_pos_ind = None, None, None
         self.path = None
 
     def set_names(self, joint_names, end_eff_names):
         self.joint_names = joint_names
         self.end_eff_names = end_eff_names
 
-    def record(self, j_pos, j_vel, ee_pos, com_pos):
+    def record(self, j_pos, ee_pos, root_pos):
         self.j_pos.append(np.array(j_pos).tolist())
-        self.j_vel.append(np.array(j_vel).tolist())
         self.ee_pos.append(np.array(ee_pos).tolist())
-        self.com_pos.append(np.array(com_pos).tolist())
+        self.root_pos.append(np.array(root_pos).tolist())
 
     def at_time(self, timestep):
         '''
-        @returns: joint_positions, joint_velocities, end_effector_positions, com_position
+        @returns: joint_positions, local_end_effector_positions, root_position
         '''
         ts = timestep % len(self.j_pos)
-        return self.j_pos[ts], self.j_vel[ts], self.ee_pos[ts], self.com_pos[ts]
+        return self.j_pos[ts], self.ee_pos[ts], self.root_pos[ts]
     
     @staticmethod
     def __get_ranges(sizes):
@@ -177,23 +175,20 @@ class RefMotionStore(object):
         points = np.array([
             np.concatenate([
                 self.j_pos[i],
-                self.j_vel[i],
                 self.ee_pos[i],
-                self.com_pos[i],
+                self.root_pos[i],
             ])
             for i in range(len(self.j_pos))
         ])
 
-        self.j_pos_ind, self.j_vel_ind, self.ee_pos_ind, self.com_pos_ind = self.__get_ranges([
+        self.j_pos_ind, self.ee_pos_ind, self.root_pos_ind = self.__get_ranges([
             len(self.j_pos[0]),
-            len(self.j_vel[0]),
             len(self.ee_pos[0]),
-            len(self.com_pos[0]),
+            len(self.root_pos[0]),
         ])
 
         periodic = np.zeros(points.shape[1], dtype=np.bool)
         periodic[self.j_pos_ind] = True
-        periodic[self.j_vel_ind] = True
 
         print('error:', np.mean(np.square(points[-1, periodic] - points[0, periodic])))
         points[-1, periodic] = points[0, periodic]
@@ -211,22 +206,22 @@ class RefMotionStore(object):
 
     def pose_at_time(self, time):
         data = self.path.pose_at_time(time)
-        return data[np.concatenate([self.com_pos_ind, self.j_pos_ind])]
+        return data[np.concatenate([self.root_pos_ind, self.j_pos_ind])]
 
     def vel_at_time(self, time):
         data = self.path.vel_at_time(time)
-        return data[np.concatenate([self.com_pos_ind, self.j_pos_ind])]
+        return data[np.concatenate([self.root_pos_ind, self.j_pos_ind])]
 
     def ref_at_time(self, time):
         data = self.path.pose_at_time(time)
         v_data = self.path.vel_at_time(time)
         return {
             'jpos': data[self.j_pos_ind],
-            'jvel': data[self.j_vel_ind],
+            'jvel': v_data[self.j_pos_ind],
             'ee': data[self.ee_pos_ind],
-            'torso': data[self.com_pos_ind],
-            'torso_z': data[self.com_pos_ind][2],
-            'torso_v': v_data[self.com_pos_ind],
+            'pelvis': data[self.root_pos_ind],
+            'pelvis_z': data[self.root_pos_ind][2],
+            'pelvis_v': v_data[self.root_pos_ind],
         }
 
     def load(self, file_name):
@@ -246,9 +241,8 @@ class RefMotionStore(object):
                 'end_eff_names': self.end_eff_names,
                 'dt': self.dt,
                 'j_pos': self.j_pos,
-                'j_vel': self.j_vel,
                 'ee_pos': self.ee_pos,
-                'com_pos': self.com_pos,
+                'root_pos': self.root_pos,
             }, fn)
 
 

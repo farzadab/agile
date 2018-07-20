@@ -73,10 +73,6 @@ _DEFAULT_ARGS = {
         'default': 1000,
         'help': 'For how many timesteps should we run the application',
     },
-    'action_repeat_steps': {
-        'type': int,
-        'help': 'Applying the same action for multiple timesteps',
-    },
     'nb_iters': {
         'type': int,
         'help': 'Number of iterations to run the algorithm',

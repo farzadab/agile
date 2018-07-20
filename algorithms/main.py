@@ -21,8 +21,6 @@ def get_args():
 
         multi_step=None,
 
-        action_repeat_steps=1,  # not used for now
-
         net_layer_size=16,
         net_nb_layers=0,
         net_nb_critic_layers=2,

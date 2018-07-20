@@ -1,6 +1,7 @@
 import numpy as np
 from collections import OrderedDict
 import gym
+import time
 import copy
 
 from .robots import WalkerV2, Walker2DNoMass, Walker2DPD, FixedWalker, FixedPDWalker
@@ -41,10 +42,9 @@ class Walker2DRefEnv(Walker2DEnv):
 
     def play_path(self, timesteps=None, store_fname=None):
         'Replays the reference trajectory + can store the data for later use'
-        if store_fname is None:
+        if store_fname is '':
             store_fname = self.default_store_fname
 
-        import time
         self._reset()
 
         if timesteps is None:
@@ -54,37 +54,28 @@ class Walker2DRefEnv(Walker2DEnv):
         if store_fname:
             store = RefMotionStore(
                 dt=self.scene.dt,
-                joint_names=[joint.joint_name for joint in env.ref_robot.ordered_joints],
-                end_eff_names=['foot', 'foot_left']
+                joint_names=[joint.joint_name for joint in self.robot.ordered_joints],
+                end_eff_names=self.robot.ee_names
             )
-        
-        def fix_y(pos):
-            pos[1] -= 1
-            return pos
 
         for _ in range(timesteps):
             pose = self.ref.pose_at_time(self.timer)
-            self.reset_ref_pose(pose)
-            self.robot.body_xyz = pose[:3]  # just a hack to make the camera_adjust work
-            self.camera_adjust(2)
+            self.reset_stationary_pose(pose)
+            # self.robot.body_xyz = pose[:3]  # just a hack to make the camera_adjust work
+            self.camera_adjust(2, 0, 10)
 
             self.timer += self.scene.dt
             time.sleep(self.scene.dt)
             if store:
-                vel = self.ref.vel_at_time(self.timer)
-                ee_pos = np.concatenate([
-                    fix_y(self.ref_robot.parts[ee_name].current_position())
-                    for ee_name in store.end_eff_names
-                ])
+                ee_local_pos = self.robot.get_end_eff_positions()
                 store.record(
                     pose[3:],
-                    vel[3:],
-                    ee_pos,
+                    ee_local_pos,
                     pose[:3],
                 )
 
-        # if store:
-        #     store.store(store_fname)
+        if store:
+            store.store(store_fname)
         
     def _seed(self, seed=None):
         ret = super()._seed(seed)
@@ -97,12 +88,16 @@ class Walker2DRefEnv(Walker2DEnv):
             pose[1] = 1
             self.ref_robot.reset_stationary_pose(pose[:3], pose[3:])
 
-    def reset_stationary_pose(self, pose, vel):
+    def reset_stationary_pose(self, pose, vel=None):
+        if vel is None:
+            vel = [0] * 9
         self.robot.reset_stationary_pose(pose[:3], pose[3:], root_velocity=vel[:3], joint_velocities=vel[3:])
         self.reset_ref_pose(pose)
 
     def _reset(self):
         super()._reset()
+
+        self.dt = self.scene.dt
         # self._p.setGravity(0.0,0.0,0.0)
         if self.isRender:
             self.ref_robot.scene = self.scene
@@ -174,9 +169,9 @@ class Walker2DRefEnvDM(Walker2DRefEnv):
     '''
     Walker2DRef environment with the corrected rewards
     '''
-    r_names = ['jpos', 'jvel', 'ee', 'torso_z', 'torso_v']
-    r_weights = dict(jpos=0.65, jvel=0.1, ee=0.1 , torso_z=0.075, torso_v=0.075)
-    r_scales  = dict(jpos=2   , jvel=0.1, ee=40/3, torso_z=10/3 , torso_v=10/3 )
+    r_names = ['jpos', 'jvel', 'ee', 'pelvis_z', 'pelvis_v']
+    r_weights = dict(jpos=0.65, jvel=0.1, ee=0.1 , pelvis_z=0.075, pelvis_v=0.075)
+    r_scales  = dict(jpos=2   , jvel=0.1, ee=40/3, pelvis_z=10/3 , pelvis_v=10/3 )
     def __init__(self, store_fname=None, ref=None, **kwargs):
         if store_fname is None:
             store_fname = self.default_store_fname
@@ -185,14 +180,14 @@ class Walker2DRefEnvDM(Walker2DRefEnv):
         super().__init__(ref=ref, **kwargs)
 
     def cur_motion_params(self):
-        torso_p = self.robot.get_torso_position()
+        pelvis_p = self.robot.get_pelvis_position()
         return {
             'jpos': self.robot.get_joint_positions(),
             'jvel': self.robot.get_joint_velocities(),
             'ee': self.robot.get_end_eff_positions(),
-            'torso': torso_p,
-            'torso_z': torso_p[2],
-            'torso_v': self.robot.get_torso_velocity(),
+            'pelvis': pelvis_p,
+            'pelvis_z': pelvis_p[2],
+            'pelvis_v': self.robot.get_pelvis_velocity(),
         }
 
     def get_reward(self, state, action):
@@ -210,8 +205,8 @@ class Walker2DRefEnvDM(Walker2DRefEnv):
         # print(current['jpos'], targets['jpos'], self.rewards['jpos'])
         # print(current['ee'], targets['ee'], self.rewards['ee'])
         # print(current['jvel'], targets['jvel'], self.rewards['jvel'])
-        # print(current['torso'], targets['torso'], self.rewards['torso'])
-        # print(current['torso_v'], targets['torso_v'], self.rewards['torso_v'])
+        # print(current['pelvis'], targets['pelvis'], self.rewards['pelvis'])
+        # print(current['pelvis_v'], targets['pelvis_v'], self.rewards['pelvis_v'])
         # print(self.rewards.values())
         return sum([self.r_weights[param] * self.rewards[param] for param in self.r_names])
 
@@ -236,16 +231,45 @@ class FixedWalker2DPDRefEnvDM(FixedWalkerRefEnvDM):
         super().__init__(robot=FixedPDWalker())
 
 
-if __name__ == '__main__':
-    # env = FastWalker2DRefEnvDM()
-    # env = Walker2DRefEnvDM()
-    # env.render('human')
-    # env.play_path()
+def display_robot_parts_with_cube():
+    from envs.robot_locomotors import get_cube
+
     env = FixedWalker2DPDRefEnvDM()
     env.render('human')
-    import time
     env._reset()
-    env._p.setGravity(0.0,0.0,0.0)
+    env._p.setGravity(0.0, 0.0, 0.0)
+    part_names = list(env.robot.parts.keys())
+    cube = get_cube(env._p, 0, 0, 0)
+    print(part_names)
+    env._step(env.ref.pose_at_time(env.timer)[3:])
+    for i in range(1000):
+        # env.timer += env.scene.dt
+        # env.parts[env.robot.pelvis_partname].reset_pose(env.ref.pose_at_time(env.timer)[:3], [.1, 0, 0, 1])
+        part = env.robot.parts[part_names[i % len(part_names)]]
+        print(part_names[i % len(part_names)])
+        pos = part.current_position()
+        pos[1] -= 0.1
+        cube.reset_position(pos)
+        # print(env.robot.robot_body.current_position(), env.parts[env.robot.pelvis_partname].current_position())
+        time.sleep(env.scene.dt * 100)
+
+
+def pd_drive_fixed_walker():
+    env = Walker2DPDRefEnvDM()
+    env.render('human')
+    env._reset()
+    env._p.setGravity(0.0, 0.0, 0.0)
     for i in range(1000):
         env._step(env.ref.pose_at_time(env.timer)[3:])
         time.sleep(env.scene.dt)
+
+
+def play_path(env, record=False):
+    env.render('human')
+    env.play_path(store_fname='' if record else None)
+
+
+if __name__ == '__main__':
+    play_path(Walker2DRefEnv(), False)
+    # pd_drive_fixed_walker()
+    # display_robot_parts_with_cube()
