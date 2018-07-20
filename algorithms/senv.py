@@ -3,6 +3,7 @@ from gym.utils import seeding
 import numpy as np
 import os.path as path
 import copy
+import time
 import gym
 import pybullet_envs
 
@@ -468,16 +469,28 @@ class MultiStepEnv(ObjectWrapper):
     def __init__(self, env, nb_steps=5):
         super().__init__(env)
         self.__wrapped__ = env
+        self.__rendering__ = True
         self.nb_steps = nb_steps
+    
+    def render(self, mode='human'):
+        self.__rendering__ = True
+        self.__wrapped__.render(mode)
     
     def step(self, action):
         total_reward = 0
         for i in range(self.nb_steps):
-            obs, reward, done, _ = self.env.step(action)
+            obs, reward, done, extra = self.__wrapped__.step(action)
             total_reward += reward
+
+            if self.__rendering__ and \
+                    hasattr(self.__wrapped__, 'scene') and hasattr(self.__wrapped__.scene, 'dt') and \
+                    i != self.nb_steps-1:
+                time.sleep(self.__wrapped__.scene.dt)
+
             if done:
                 break
-        return obs, total_reward / self.nb_steps, done, {}
+
+        return obs, total_reward, done, extra
     
 
 _ENV_MAP = dict(

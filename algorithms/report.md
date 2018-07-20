@@ -490,6 +490,21 @@ Zhaoming  -----  terminate episode based on low reward!
 > still can't take the second step
 ⇒⇒⇒ yay, getting there!
 
-
+## 18/07/2018 - Commit bf0e451cfb20043b7357cf74d4ce5d5b90637aee
 Michiel  -----  instead of matching CoM position, only match the height of torso and CoM velocity
+
+(✔ ) Jul18_16-14-59: matching torso_z and torso_v instead of torso
+⚫⚫⚫ still gotta change this for ee ....
+> ET reward of 0.1 may be too low for this scheme (torso_z is really close to 1 when it stays still) but still good
+> can sometimes take as much as 12 steps! but it still falls
+
 Michiel  -----  use PD and higher control time-step
+--> kp=kd=15
+(✔ ) Jul18_17-12-33: same ++ PD ++ 4x control step
+
+--> kp=15 kd=20
+(  ) Jul19_13-02-49: walker without reward ET ++ new rewards ++ PD ++ 2x control step (different PD with /10 and get_position, get_velocity instead)
+(  ) Jul19_13-07-25: walker without reward ET ++ new rewards ++ PD ++ 4x control step 
+(  ) Jul19_13-07-41: walker without reward ET ++ new rewards ++ PD ++ 2x control step 
+
+--> kp=kd=2

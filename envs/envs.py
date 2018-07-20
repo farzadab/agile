@@ -3,7 +3,7 @@ from collections import OrderedDict
 import gym
 import copy
 
-from .robots import WalkerV2, Walker2DNoMass, Walker2DPD, FixedWalker
+from .robots import WalkerV2, Walker2DNoMass, Walker2DPD, FixedWalker, FixedPDWalker
 from .modified_base_envs import WalkerBaseBulletEnv
 from .walker_paths import WalkingPath, FastWalkingPath
 from .paths import RefMotionStore
@@ -17,12 +17,12 @@ class Walker2DEnv(WalkerBaseBulletEnv):
 
 class Walker2DRefEnv(Walker2DEnv):
     default_store_fname = 'walker.json'
-    def __init__(self, rsi=True, ref=WalkingPath, robot=None, et_rew=0.1):
+    def __init__(self, rsi=True, ref=WalkingPath, robot=None, et_rew=0):
         '''
         @param rsi: whether or not to do Random-Start-Initialization (default: True)
         @param ref: the reference (kinematic) motion
         @param robot: the model to use in simulation
-        @param et_rew: the reward threshold used for early termination. set `et_rew=1` to get rid of it
+        @param et_rew: the reward threshold used for early termination. set `et_rew=0` to get rid of it
         '''
         self.timer = 0
         self.rsi = rsi
@@ -143,13 +143,13 @@ class Walker2DRefEnv(Walker2DEnv):
         self.rewards['progress'] *= 4
 
         return rew
-    
+
     def get_obs_with_phase(self, robot_state=None):
         if robot_state is None:
             robot_state = self.robot.calc_state()
         phase = self.timer % self.ref.one_cycle_duration()
         return np.concatenate([robot_state, [phase]])
-    
+
     def action_transform(self, action):
         return action
 
@@ -221,26 +221,31 @@ class FastWalker2DRefEnvDM(Walker2DRefEnvDM):
 
 
 class Walker2DPDRefEnvDM(Walker2DRefEnvDM):
-    def __init__(self):
-        super().__init__(robot=Walker2DPD())
+    def __init__(self, robot=Walker2DPD()):
+        super().__init__(robot=robot)
 
 
 class FixedWalkerRefEnvDM(Walker2DRefEnvDM):
     r_names = ['jpos', 'jvel']
+    def __init__(self, robot=FixedWalker()):
+        super().__init__(robot=robot)
+
+
+class FixedWalker2DPDRefEnvDM(FixedWalkerRefEnvDM):
     def __init__(self):
-        super().__init__(robot=FixedWalker())
+        super().__init__(robot=FixedPDWalker())
 
 
 if __name__ == '__main__':
     # env = FastWalker2DRefEnvDM()
-    env = Walker2DRefEnvDM()
-    env.render('human')
-    env.play_path()
-    # env = Walker2DPDRefEnvDM()
+    # env = Walker2DRefEnvDM()
     # env.render('human')
-    # import time
-    # env._reset()
-    # env._p.setGravity(0.0,0.0,0.0)
-    # for i in range(1000):
-    #     env._step(env.ref.pose_at_time(env.timer)[3:])
-    #     time.sleep(env.scene.dt)
+    # env.play_path()
+    env = FixedWalker2DPDRefEnvDM()
+    env.render('human')
+    import time
+    env._reset()
+    env._p.setGravity(0.0,0.0,0.0)
+    for i in range(1000):
+        env._step(env.ref.pose_at_time(env.timer)[3:])
+        time.sleep(env.scene.dt)

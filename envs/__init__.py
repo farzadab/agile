@@ -49,3 +49,10 @@ register(
     max_episode_steps=1000,
     reward_threshold=2500.0,
 )
+
+register(
+    id="FixedWalker2DPDRefEnvDM-v0",
+    entry_point="envs.envs:FixedWalker2DPDRefEnvDM",
+    max_episode_steps=1000,
+    reward_threshold=2500.0,
+)

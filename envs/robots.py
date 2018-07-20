@@ -98,8 +98,8 @@ class Walker2DNoMass(WalkerV2):
 
 
 class Walker2DPD(WalkerV2):
-    kp = 15
-    kd = 15
+    kp = 2
+    kd = 2
     def apply_action(self, a):
         joint_pose = np.array(
             [j.current_relative_position() for j in self.ordered_joints],
@@ -130,3 +130,12 @@ class FixedWalker(WalkerV2):
         for i, joint in enumerate(self.ordered_joints):
             joint.reset_position(joint_positions[i], joint_velocities[i])
 
+
+class FixedPDWalker(Walker2DPD):
+    model_filename = "models/fixed_walker.xml"
+
+    def reset_stationary_pose(self, root_position, joint_positions, root_velocity=[0, 0, 0], joint_velocities=None):
+        FixedWalker.reset_stationary_pose(
+            self,
+            root_position, joint_positions, root_velocity, joint_velocities
+        )
