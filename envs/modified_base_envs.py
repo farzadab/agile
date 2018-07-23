@@ -186,7 +186,11 @@ class WalkerBaseBulletEnv(MJCFBaseBulletEnv):
         self.HUD(state, a, done)
         self.reward += sum(self.rewards)
 
-        return state, sum(self.rewards), bool(done), {'rewards': rewards_dict}
+        extra = {'rewards': rewards_dict}
+        if done:
+            extra['termination'] = 'rew'
+
+        return state, sum(self.rewards), bool(done), extra
 
     def camera_adjust(self, distance=10, yaw=10, pitch=-20):
         x, y, z = self.robot.body_xyz

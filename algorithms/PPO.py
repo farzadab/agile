@@ -191,7 +191,9 @@ class PPO(object):
         done = True  # force reset
         # first = True
         rews = []
-        num_episodes = 0
+        num_episodes = -1
+
+        termination_types = {'rew': 0, 'torso': 0, 'time': 0}
 
         for i_step in inf_range():
             if done:
@@ -230,6 +232,9 @@ class PPO(object):
 
             total_rew += rew
             state = state_p
+
+            if done:
+                termination_types[extra.get('termination', 'time')] += 1
         
         if self.writer:
             self.writer.add_scalar('Train/AvgReward', float(total_rew) / (i_step+1))
@@ -240,6 +245,9 @@ class PPO(object):
                 rews_t = np.mean(rews, axis=0)
                 for i, rew in enumerate(rews_t):
                     self.writer.add_scalar('Rewards/Avg-%d' % i, rew)
+            for k, v in termination_types.items():
+                self.writer.add_scalar('Extra/TermT/%s' % k, v / num_episodes)
+
     
 
     def update_critic(self, mem, batch_size):

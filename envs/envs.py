@@ -18,7 +18,7 @@ class Walker2DEnv(WalkerBaseBulletEnv):
 
 class Walker2DRefEnv(Walker2DEnv):
     default_store_fname = 'walker.json'
-    def __init__(self, rsi=True, ref=WalkingPath, robot=None, et_rew=0):
+    def __init__(self, rsi=True, ref=WalkingPath, robot=None, et_rew=0.1):
         '''
         @param rsi: whether or not to do Random-Start-Initialization (default: True)
         @param ref: the reference (kinematic) motion
@@ -62,7 +62,7 @@ class Walker2DRefEnv(Walker2DEnv):
             pose = self.ref.pose_at_time(self.timer)
             self.reset_stationary_pose(pose)
             # self.robot.body_xyz = pose[:3]  # just a hack to make the camera_adjust work
-            self.camera_adjust(2, 0, 10)
+            self.camera_adjust(4, 0, 10)
 
             self.timer += self.scene.dt
             time.sleep(self.scene.dt)
@@ -161,6 +161,7 @@ class Walker2DRefEnv(Walker2DEnv):
 
         if rew < self.et_rew:
             done = True
+            extra['termination'] = 'torso'
 
         return self.get_obs_with_phase(obs), rew, done, extra
 

@@ -508,3 +508,8 @@ Michiel  -----  use PD and higher control time-step
 (  ) Jul19_13-07-41: walker without reward ET ++ new rewards ++ PD ++ 2x control step 
 
 --> kp=kd=2
+
+(✖ ) Jul20_11-56-55: test PD walker with new egocentric ee reward with 2x control step
+(✖ ) Jul20_11-57-14: test PD walker with new egocentric ee reward with 4x control step
+(⛳ ) Jul20_12-19-52: test PD walker with new egocentric ee reward with 2x control step ++ ET reward<0.1
+> great! completely robust. It's just a little bit faster than the reference motion
