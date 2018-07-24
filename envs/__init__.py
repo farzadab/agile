@@ -56,3 +56,24 @@ register(
     max_episode_steps=1000,
     reward_threshold=2500.0,
 )
+
+register(
+    id="TRLRunEnvDM-v0",    # reference motion is flawed (upright torso)
+    entry_point="envs.envs:TRLRunBadEnvDM",
+    max_episode_steps=1000,
+    reward_threshold=2500.0,
+)
+
+register(
+    id="TRLRunEnvDM-v1",    # reference motion is flawed (upright torso)
+    entry_point="envs.envs:TRLRunBadPDEnvDM",
+    max_episode_steps=1000,
+    reward_threshold=2500.0,
+)
+
+register(
+    id="TRLRunEnvDM-v2",
+    entry_point="envs.envs:TRLRunPDEnvDM",
+    max_episode_steps=1000,
+    reward_threshold=2500.0,
+)

@@ -1,4 +1,5 @@
 from .paths import RepeatingPath
+from .motionread import importTRLmotion3to2
 
 data = [
     [0.000000, 	0.000000, 	 1.000000,  	0.483940, 	-0.235420, 	-0.000880, 	-0.352580, 	-0.406990, 	0.100000],
@@ -15,6 +16,8 @@ data = [
 ]
 
 WalkingPath = RepeatingPath(2, data, [0, 1, 1, 1, 1, 1, 1, 1, 1])
+TRLWalk = importTRLmotion3to2('biped3d_walk.txt')
+TRLStep = importTRLmotion3to2('biped3d_mocap_inplace_step.txt')
+TRLRun = importTRLmotion3to2('biped3d_run.txt')
 
 FastWalkingPath = RepeatingPath(1, data, [0, 1, 1, 1, 1, 1, 1, 1, 1])
-

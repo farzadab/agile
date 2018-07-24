@@ -513,3 +513,14 @@ Michiel  -----  use PD and higher control time-step
 (✖ ) Jul20_11-57-14: test PD walker with new egocentric ee reward with 4x control step
 (⛳ ) Jul20_12-19-52: test PD walker with new egocentric ee reward with 2x control step ++ ET reward<0.1
 > great! completely robust. It's just a little bit faster than the reference motion
+
+⇒⇒⇒ do I really need the ET-reward? let's use the RL-Lab code:
+(✖ ) Walker2DRefEnvDM-v1: just learns to stand around
+(✖ ) Walker2DRefEnvDM_ET-rew-v1: 
+> both won't work, maybe PD and 2x control step are needed here
+(  ) Walker2DRefEnvDM_ET-rew: added PD and 2x control
+
+⇒⇒⇒ new env: TRLRunEnvDM-v0 with flawed running motion (torso is not properly rotated)
+(  ) Jul24_10-32-53: test new TRL env (with flawed motion) ++ ET-reward (2x)
+(  ) Jul24_12-17-20: test new TRL env (with flawed motion) wihtout ET-reward (2x)
+(  ) Jul24_13-51-03: test new TRL env (with flawed motion) without ET-reward ++ PD (2x)

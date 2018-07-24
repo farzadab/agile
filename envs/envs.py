@@ -6,7 +6,7 @@ import copy
 
 from .robots import WalkerV2, Walker2DNoMass, Walker2DPD, FixedWalker, FixedPDWalker
 from .modified_base_envs import WalkerBaseBulletEnv
-from .walker_paths import WalkingPath, FastWalkingPath
+from .walker_paths import WalkingPath, FastWalkingPath, TRLWalk, TRLStep, TRLRun
 from .paths import RefMotionStore
 
 
@@ -232,6 +232,26 @@ class FixedWalker2DPDRefEnvDM(FixedWalkerRefEnvDM):
         super().__init__(robot=FixedPDWalker())
 
 
+class TRLRunBadEnvDM(Walker2DRefEnvDM):
+    '''
+    The motion is actually flawed: the torso should be leaning forward but it isn't in this motion
+    '''
+    default_store_fname = '2d_run_bad.json'
+
+
+class TRLRunBadPDEnvDM(Walker2DPDRefEnvDM):
+    '''
+    The motion is actually flawed: the torso should be leaning forward but it isn't in this motion
+    '''
+    default_store_fname = '2d_run_bad.json'
+
+class TRLRunPDEnvDM(Walker2DPDRefEnvDM):
+    '''
+    2D biped running motion
+    '''
+    default_store_fname = '2d_run.json'
+
+
 def display_robot_parts_with_cube():
     from envs.robot_locomotors import get_cube
 
@@ -265,12 +285,15 @@ def pd_drive_fixed_walker():
         time.sleep(env.scene.dt)
 
 
-def play_path(env, record=False):
+def play_path(env, record=False, ref=None):
+    if ref is not None:
+        env.ref = ref
     env.render('human')
     env.play_path(store_fname='' if record else None)
+    # env.play_path(store_fname='2d_run.json' if record else None)
 
 
 if __name__ == '__main__':
-    play_path(Walker2DRefEnv(), False)
+    play_path(Walker2DRefEnv(), True, ref=TRLRun)
     # pd_drive_fixed_walker()
     # display_robot_parts_with_cube()

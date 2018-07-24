@@ -5,6 +5,12 @@ numpy
 pygit2
 termcolor
 scipy
+
+pyquaternion        # quaternions
+
+# numpy-quaternion  # quaternions, amazing!
+# numba             # numpy-quaternion complains if you don't have it ...
+
 #path.py
 
 # PyTorch

@@ -46,7 +46,6 @@ def importTRLmotion3to2(filename, path=MOCAP_PATH):
         # skipping the root and torso orientation (always assuming upright position for now)
         joints = frames[:, 12:]
 
-        print(joints.shape)
         joints_2d = np.vstack([
             _get_orientations_from_quaternion_seq(joints[:, :4]),
             joints[:, 4],
@@ -63,7 +62,7 @@ def importTRLmotion3to2(filename, path=MOCAP_PATH):
         points[-1, periodic] = points[0, periodic]
 
         return RepeatingPath(
-            duration=duration * 10,
+            duration=duration, # * 10
             points=points,
             periodic=periodic,
         )
