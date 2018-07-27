@@ -409,7 +409,7 @@ Jul09_17-15-28: SqPhase2
 ⇒⇒⇒ other env reward styles
 (  ) Jul10_14-42-12: distsq
 (  ) Jul10_14-57-19: velocity
-(⛳) Jul10_15-03-26: distsq+e
+(⛳ ) Jul10_15-03-26: distsq+e
 
 
 ## Reference based motion with Walker2D
@@ -521,6 +521,39 @@ Michiel  -----  use PD and higher control time-step
 (  ) Walker2DRefEnvDM_ET-rew: added PD and 2x control
 
 ⇒⇒⇒ new env: TRLRunEnvDM-v0 with flawed running motion (torso is not properly rotated)
-(  ) Jul24_10-32-53: test new TRL env (with flawed motion) ++ ET-reward (2x)
-(  ) Jul24_12-17-20: test new TRL env (with flawed motion) wihtout ET-reward (2x)
-(  ) Jul24_13-51-03: test new TRL env (with flawed motion) without ET-reward ++ PD (2x)
+(✖ ) Jul24_10-32-53: test new TRL env (with flawed motion) ++ ET-reward (2x)
+(✖ ) Jul24_12-17-20: test new TRL env (with flawed motion) wihtout ET-reward (2x)
+(✖ ) Jul24_13-51-03: test new TRL env (with flawed motion) without ET-reward ++ PD (2x)
+
+⇒⇒⇒ why has the code stopped working? going back a step
+(✖ ) Jul24_17-58-06: re-run of Jul20_12-19-52
+> just learns to stand around, what's wrong? did I do it correctly?
+(✔ ) Jul25_10-03-54: re-run walker PD ET-rew
+(✔ ) Jul25_10-09-42: re-run walker PD ET-rew<0.15
+> this is is actually a little bit better!
+
+Michiel  -----  use original state features from the SCA paper
+(✖ ) Jul25_11-19-51: test walker without ET-rew and the original state features
+> just stays still
+
+(✖ ) Jul25_17-34-40: TRL slower run (1.3x) with original state features and no ET-reward (TRLRunEnvDM-v3)
+> just stays still
+
++++ found a bug: in 2D motion y should always be zero or something weird happens (character was on the ground but still moving!)
++++ my code is really slow, should re-write a lot of it
+
+(  ) Jul26_09-58-55: test running motion with a fixed character
+> can't really, probably too fast
+(  ) Jul26_09-58-29: test 1.3x slower running motion with a fixed character
+(  ) Jul26_09-58-55: test 1.5x slower running motion with a fixed character
+
++++ character weighs 2.67 Kg
+
+--> r_weights = dict(jpos=0.1 , jvel=0.1, ee=0.1 , pelvis_z=0.1, pelvis_v=0.60)
+(  ) Jul26_12-18-05: walker without ET-rew  ++  more forward velocity reward
+(  ) Jul26_12-19-20: walker without ET-rew  ++  more forward velocity reward ++ less noise (-1.3)
+(  ) Jul26_12-19-55: walker without ET-rew  ++  more forward velocity reward ++ more noise (-0.7)
+
+(  ) Jul27_09-55-50: walker without ET-rew  ++  more forward velocity reward  r_weights = dict(jpos=0.1 , jvel=0.1, ee=0.1 , pelvis_z=0.1, pelvis_v=0.60) ++ rscales[pelvis_v] = 10/1.5        
+(  ) Jul27_09-59-02: walker without ET-rew  ++  more forward velocity reward  r_weights = dict(jpos=0.1 , jvel=0.1, ee=0.1 , pelvis_z=0.1, pelvis_v=0.60) ++ rscales[pelvis_v] = 10/1.5  ++ time-step feature
+(  ) Jul27_11-37-24: walker without ET-rew  ++  more forward velocity reward  r_weights = dict(jpos=0.4 , jvel=0.1, ee=0.1 , pelvis_z=0.02, pelvis_v=0.38)

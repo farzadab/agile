@@ -4,7 +4,7 @@ import gym
 import time
 import copy
 
-from .robots import WalkerV2, Walker2DNoMass, Walker2DPD, FixedWalker, FixedPDWalker
+from .robots import WalkerV2, Walker2DNoMass, Walker2DPD, FixedWalker, FixedPDWalker, TRLWalker
 from .modified_base_envs import WalkerBaseBulletEnv
 from .walker_paths import WalkingPath, FastWalkingPath, TRLWalk, TRLStep, TRLRun
 from .paths import RefMotionStore
@@ -18,7 +18,7 @@ class Walker2DEnv(WalkerBaseBulletEnv):
 
 class Walker2DRefEnv(Walker2DEnv):
     default_store_fname = 'walker.json'
-    def __init__(self, rsi=True, ref=WalkingPath, robot=None, et_rew=0.1):
+    def __init__(self, rsi=True, ref=WalkingPath, robot=None, ref_robot=None, et_rew=0.0):
         '''
         @param rsi: whether or not to do Random-Start-Initialization (default: True)
         @param ref: the reference (kinematic) motion
@@ -28,15 +28,16 @@ class Walker2DRefEnv(Walker2DEnv):
         self.timer = 0
         self.rsi = rsi
         self.et_rew = et_rew
-        self.ref_robot = Walker2DNoMass()
+        self.ref_robot = Walker2DNoMass() if ref_robot is None else ref_robot
         super().__init__(robot=robot)
         self.ref = ref
+        self.istep = 0
         self.correct_state_id = False
         high = self.observation_space.high
         low = self.observation_space.low
         self.observation_space = gym.spaces.Box(
-            np.concatenate([low, [0]]),
-            np.concatenate([high, [self.ref.one_cycle_duration()]]),
+            np.concatenate([low, [0, 0]]),
+            np.concatenate([high, [self.ref.one_cycle_duration(), 1]]),
             dtype=np.float32,
         )
 
@@ -96,6 +97,7 @@ class Walker2DRefEnv(Walker2DEnv):
 
     def _reset(self):
         super()._reset()
+        self.istep = 0
 
         self.dt = self.scene.dt
         # self._p.setGravity(0.0,0.0,0.0)
@@ -143,14 +145,19 @@ class Walker2DRefEnv(Walker2DEnv):
         if robot_state is None:
             robot_state = self.robot.calc_state()
         phase = self.timer % self.ref.one_cycle_duration()
-        return np.concatenate([robot_state, [phase]])
+        return np.concatenate([robot_state, [phase, self.istep/1000]])
 
     def action_transform(self, action):
         return action
 
     def _step(self, action):
         self.timer += self.scene.dt
+
+        if self.isRender:
+            time.sleep(self.scene.dt)
+
         obs, _, done, extra = super()._step(self.action_transform(action))
+        self.istep += 1
         self.rewards = extra.get('rewards', {})
 
         ref_pose = self.ref.pose_at_time(self.timer)
@@ -161,7 +168,7 @@ class Walker2DRefEnv(Walker2DEnv):
 
         if rew < self.et_rew:
             done = True
-            extra['termination'] = 'torso'
+            extra['termination'] = 'rew'
 
         return self.get_obs_with_phase(obs), rew, done, extra
 
@@ -171,8 +178,8 @@ class Walker2DRefEnvDM(Walker2DRefEnv):
     Walker2DRef environment with the corrected rewards
     '''
     r_names = ['jpos', 'jvel', 'ee', 'pelvis_z', 'pelvis_v']
-    r_weights = dict(jpos=0.65, jvel=0.1, ee=0.1 , pelvis_z=0.075, pelvis_v=0.075)
-    r_scales  = dict(jpos=2   , jvel=0.1, ee=40/3, pelvis_z=10/3 , pelvis_v=10/3 )
+    r_weights = dict(jpos=0.4 , jvel=0.1, ee=0.1 , pelvis_z=0.02, pelvis_v=0.38)
+    r_scales  = dict(jpos=2   , jvel=0.1, ee=40/3, pelvis_z=10/3 , pelvis_v=10)
     def __init__(self, store_fname=None, ref=None, **kwargs):
         if store_fname is None:
             store_fname = self.default_store_fname
@@ -222,12 +229,29 @@ class Walker2DPDRefEnvDM(Walker2DRefEnvDM):
 
 
 class FixedWalkerRefEnvDM(Walker2DRefEnvDM):
-    r_names = ['jpos', 'jvel']
-    def __init__(self, robot=FixedWalker()):
-        super().__init__(robot=robot)
+    r_names = ['jpos', 'jvel', 'ee']
+    def __init__(self, robot=None):
+        super().__init__(robot=robot or FixedWalker(), ref_robot=FixedWalker())
 
 
 class FixedWalker2DPDRefEnvDM(FixedWalkerRefEnvDM):
+    def __init__(self):
+        super().__init__(robot=FixedPDWalker())
+
+
+class FixedSlowRunnerPDRefEnvDM(FixedWalkerRefEnvDM):
+    default_store_fname = '2d_run_slower.json'
+    def __init__(self):
+        super().__init__(robot=FixedPDWalker())
+
+class FixedSlowerRunnerPDRefEnvDM(FixedWalkerRefEnvDM):
+    default_store_fname = '2d_run_slower1.5.json'
+    def __init__(self):
+        super().__init__(robot=FixedPDWalker())
+
+
+class FixedRunnerPDRefEnvDM(FixedWalkerRefEnvDM):
+    default_store_fname = '2d_run.json'
     def __init__(self):
         super().__init__(robot=FixedPDWalker())
 
@@ -245,11 +269,24 @@ class TRLRunBadPDEnvDM(Walker2DPDRefEnvDM):
     '''
     default_store_fname = '2d_run_bad.json'
 
+
 class TRLRunPDEnvDM(Walker2DPDRefEnvDM):
     '''
     2D biped running motion
     '''
     default_store_fname = '2d_run.json'
+
+
+class TRLWalkerPDEnvDM(Walker2DRefEnvDM):
+    def __init__(self, robot=None):
+        super().__init__(robot=robot or TRLWalker())
+
+
+class TRLSlowRunPDEnvDM(TRLWalkerPDEnvDM):
+    '''
+    2D biped running motion (1.3 times slower than original)
+    '''
+    default_store_fname = '2d_run_slower.json'
 
 
 def display_robot_parts_with_cube():
@@ -290,10 +327,10 @@ def play_path(env, record=False, ref=None):
         env.ref = ref
     env.render('human')
     env.play_path(store_fname='' if record else None)
-    # env.play_path(store_fname='2d_run.json' if record else None)
+    # env.play_path(store_fname='2d_run_slower1.5.json' if record else None)
 
 
 if __name__ == '__main__':
-    play_path(Walker2DRefEnv(), True, ref=TRLRun)
+    play_path(Walker2DRefEnv(), False, ref=TRLRun)
     # pd_drive_fixed_walker()
     # display_robot_parts_with_cube()

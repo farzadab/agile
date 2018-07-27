@@ -126,7 +126,8 @@ class PPO(object):
             # still not sure if this is needed or not
             mem['adv'] = (mem['adv'] - mem['adv'].mean()) / mem['adv'].std()
 
-            explained_var = 1 - (mem['vpred'] - mem['creward']).var() / mem['creward'].var()
+            # explained_var = 1 - (mem['vpred'] - mem['creward']).var() / mem['creward'].var()
+            explained_var = 1 - (mem['vpred'] - mem['vtarg']).var() / mem['vtarg'].var()
             self.writer.add_scalar('Train/ExplVar', explained_var)
 
             old_actor = self.actor.make_copy()
@@ -213,8 +214,6 @@ class PPO(object):
             # TODO: use a callback here instead
             if self.render:# and i_step % 100 == 0:
                 self.env.render(mode='human')
-                import time
-                time.sleep(0.01)
 
             act = self.actor.get_action(th.FloatTensor(state), explore=True).detach().numpy()
             

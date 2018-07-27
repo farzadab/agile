@@ -188,7 +188,7 @@ class WalkerBaseBulletEnv(MJCFBaseBulletEnv):
 
         extra = {'rewards': rewards_dict}
         if done:
-            extra['termination'] = 'rew'
+            extra['termination'] = 'torso'
 
         return state, sum(self.rewards), bool(done), extra
 

@@ -472,21 +472,11 @@ class MultiStepEnv(ObjectWrapper):
         self.__rendering__ = True
         self.nb_steps = nb_steps
     
-    def render(self, mode='human'):
-        self.__rendering__ = True
-        self.__wrapped__.render(mode)
-    
     def step(self, action):
         total_reward = 0
         for i in range(self.nb_steps):
             obs, reward, done, extra = self.__wrapped__.step(action)
             total_reward += reward
-
-            if self.__rendering__ and i != self.nb_steps-1:
-                if hasattr(self.__wrapped__, 'dt'):
-                    time.sleep(self.__wrapped__.dt)
-                elif hasattr(self.__wrapped__.unwrapped, 'dt'):
-                    time.sleep(self.__wrapped__.unwrapped.dt)
 
             if done:
                 break

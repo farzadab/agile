@@ -58,6 +58,27 @@ register(
 )
 
 register(
+    id="FixedSlowRunnerPDRefEnvDM-v0",
+    entry_point="envs.envs:FixedSlowRunnerPDRefEnvDM",
+    max_episode_steps=1000,
+    reward_threshold=2500.0,
+)
+
+register(
+    id="FixedSlowerRunnerPDRefEnvDM-v0",
+    entry_point="envs.envs:FixedSlowerRunnerPDRefEnvDM",
+    max_episode_steps=1000,
+    reward_threshold=2500.0,
+)
+
+register(
+    id="FixedRunnerPDRefEnvDM-v0",
+    entry_point="envs.envs:FixedRunnerPDRefEnvDM",
+    max_episode_steps=1000,
+    reward_threshold=2500.0,
+)
+
+register(
     id="TRLRunEnvDM-v0",    # reference motion is flawed (upright torso)
     entry_point="envs.envs:TRLRunBadEnvDM",
     max_episode_steps=1000,
@@ -74,6 +95,20 @@ register(
 register(
     id="TRLRunEnvDM-v2",
     entry_point="envs.envs:TRLRunPDEnvDM",
+    max_episode_steps=1000,
+    reward_threshold=2500.0,
+)
+
+register(
+    id="TRLWalkerPDEnvDM-v0",
+    entry_point="envs.envs:TRLWalkerPDEnvDM",
+    max_episode_steps=1000,
+    reward_threshold=2500.0,
+)
+
+register(
+    id="TRLRunEnvDM-v3",
+    entry_point="envs.envs:TRLSlowRunPDEnvDM",
     max_episode_steps=1000,
     reward_threshold=2500.0,
 )

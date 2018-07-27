@@ -3,6 +3,7 @@ Contains the specifications for the robots used in environments
 '''
 import numpy as np
 import copy
+import gym
 import os
 
 from .robot_locomotors import WalkerBase
@@ -80,6 +81,8 @@ class Walker2D(WalkerBase):
         # root_position[2] += 0.5j.current_relative_position()
         # root_position[2] -= self.initial_z
 
+        # self.pelvis.reset_pose(root_position + self.correction, [0.000000,	0.09983341664682815, 0.0,  0.9950041652780258,])
+        # self.pelvis.reset_pose(root_position + self.correction, [0.000000,	0.137993, 0 , 0.990433])
         self.pelvis.reset_pose(root_position + self.correction, [0, 0, 0, 1])
         self.pelvis.reset_velocity(linearVelocity=root_velocity)
         self.robot_body.reset_velocity(linearVelocity=root_velocity)
@@ -103,6 +106,8 @@ class Walker2DNoMass(WalkerV2):
 
     def reset(self, bullet_client):
         super().reset(bullet_client)
+        # for name, part in self.parts.items():
+        #     print(name, bullet_client.getDynamicsInfo(part.bodies[part.bodyIndex], part.bodyPartIndex)[0])
         for part in self.parts.values():
             bullet_client.changeDynamics(part.bodies[part.bodyIndex], part.bodyPartIndex, mass=0)
 
@@ -119,6 +124,29 @@ class Walker2DPD(WalkerV2):
         super().apply_action(action)
 
 
+class TRLWalker(Walker2DPD):
+    part_names = ['thigh', 'leg', 'foot', 'thigh_left', 'leg_left', 'foot_left']
+    def __init__(self):
+        super().__init__()
+        obs_dim = len(self.part_names) * 6 + 3 + 4
+        high = np.inf * np.ones([obs_dim])
+        self.observation_space = gym.spaces.Box(-high, high)
+
+    def calc_state(self):
+        super().calc_state()  # this function has some side-effects, so let's keep it for now
+
+        pelvis_state = self.parts[self.pelvis_partname].get_pose()
+        parts_state = np.array([
+            (
+                np.subtract(self.parts[p].current_position(), pelvis_state[:3]),
+                self.parts[p].speed(),
+            )
+            for p in self.part_names
+        ]).flatten()
+
+        return np.concatenate([pelvis_state, parts_state])
+
+
 class FixedWalker(WalkerV2):
     model_filename = "models/fixed_walker.xml"
 
@@ -131,6 +159,7 @@ class FixedWalker(WalkerV2):
         root_position[0] = 0
         self.robot_body.reset_velocity(linearVelocity=[0, 0, 0])
 
+        # self.robot_body.reset_pose(root_position, [0.000000,	0.137993, 0, 0.990433])
         self.robot_body.reset_pose(root_position, [0, 0, 0, 1])
         self.body_xyz = root_position
 

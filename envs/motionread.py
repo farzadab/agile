@@ -42,7 +42,8 @@ def importTRLmotion3to2(filename, path=MOCAP_PATH):
         torso = frames[:, 1:4]
 
         torso[:, 2] += data.get('ZCompensation', 1.0)
-        torso[:, 1] += data.get('YCompensation', -0.76)
+        # torso[:, 1] += data.get('YCompensation', -0.76)
+        torso[:, 1] = 0
         # skipping the root and torso orientation (always assuming upright position for now)
         joints = frames[:, 12:]
 
