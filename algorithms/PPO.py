@@ -25,6 +25,7 @@ class PPO(object):
             gamma=0.99,
             gae_lambda=0.95,
             exploration_noise=-1,
+            explore_ratio=1.0,
             exploration_anneal=None,
             anneal_eps=True,
             writer=None, render=False):
@@ -43,6 +44,7 @@ class PPO(object):
         @param gamma: discount factor parameter (scalar)
         @param gae_lambda: the λ parameter in GAE(λ) (scalar)
         @param exploration_noise: the amount of exploration noise (log σ) for the actor (scalar)
+        @param explore_ratio: the percentage of time an exploratory action is performed
         @param anneal_eps: whether or not to anneal the clipping ϵ parameter over time
         @param writer: writer for logging training curves and images(tensorboardX.SummaryWriter)
         @param render: whehter to call the `env.render(mode='human')` or not. If yes, done at every step (bool)
@@ -55,6 +57,7 @@ class PPO(object):
         self.anneal_eps = anneal_eps
         self.gae_lambda = gae_lambda
         self.exploration_anneal = exploration_anneal
+        self.explore_ratio = explore_ratio
 
         self.render = render
         self.writer = writer
@@ -215,8 +218,9 @@ class PPO(object):
             if self.render:# and i_step % 100 == 0:
                 self.env.render(mode='human')
 
-            act = self.actor.get_action(th.FloatTensor(state), explore=True).detach().numpy()
-            
+            explore = (np.random.rand() < self.explore_ratio) or (i_step == 0)
+            act = self.actor.get_action(th.FloatTensor(state), explore=explore).detach().numpy()
+
             acts.append(act)
 
             state_p, rew, done, extra = self.env.step(act)
@@ -227,7 +231,7 @@ class PPO(object):
                     rews.append(extra['rewards'])
             # print('\r%5.2f' % _rew, end='')
 
-            mem.record(state, act, rew, state_p)
+            mem.record(state, act, rew, state_p, explore=explore)
 
             total_rew += rew
             state = state_p
@@ -386,14 +390,14 @@ class PPO(object):
 
 class ReplayMemory(Data):
     def __init__(self, gamma, gae_lambda):
-        super().__init__(['state', 'action', 'reward', 'nstate', 'vpred', 'td', 'adv', 'creward', 'vtarg'])
+        super().__init__(['state', 'action', 'reward', 'nstate', 'exploratory', 'vpred', 'td', 'adv', 'creward', 'vtarg'])
         self.gamma = gamma
         self.gae_lambda = gae_lambda
         self.episode_starts = []
         self.tensored = False
 
-    def record(self, s, a, r, ns):
-        super().add_point(s, a, r, ns, 0, 0, 0, 0, 0)
+    def record(self, s, a, r, ns, exploratory=False):
+        super().add_point(s, a, r, ns, exploratory, 0, 0, 0, 0, 0)
     
     def record_new_episode(self):
         self.episode_starts.append(self.size())
@@ -415,7 +419,7 @@ class ReplayMemory(Data):
             crew = 0
             adv = 0
             # TODO fix: this is wrong, either set to 0 or just use it when the agent is still alive ...
-            vpred = 0#vfunc(self['nstate'][-1])
+            vpred = vfunc(self['nstate'][-1])
             # print(self.episode_start_index, self.size())
             episode_return = 0
             for i in range(end-1, start-1, -1):
@@ -489,12 +493,16 @@ class ReplayMemory(Data):
         Iterates over the data once in chunks of size `batch_size`
         Can optionally shuffle the data as well
         '''
-        if shuffle:
-            order = th.randperm(self.size())
-        else:
-            order = list(range(self.size()))
-
         self.to_tensor()
+
+        exp_actions = [i for i, v in enumerate(self['exploratory']) if v is True]
+
+        if shuffle:
+            order = th.randperm(len(exp_actions))
+        else:
+            order = th.Tensor(list(range(len(exp_actions))), dtype=th.int)
+
+        order = order[exp_actions]
 
         for i in range(0, self.size(), batch_size):
             yield {k: self[k][order[i:i+batch_size]] for k in self.key_names}

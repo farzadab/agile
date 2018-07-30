@@ -556,4 +556,8 @@ Michiel  -----  use original state features from the SCA paper
 
 (  ) Jul27_09-55-50: walker without ET-rew  ++  more forward velocity reward  r_weights = dict(jpos=0.1 , jvel=0.1, ee=0.1 , pelvis_z=0.1, pelvis_v=0.60) ++ rscales[pelvis_v] = 10/1.5        
 (  ) Jul27_09-59-02: walker without ET-rew  ++  more forward velocity reward  r_weights = dict(jpos=0.1 , jvel=0.1, ee=0.1 , pelvis_z=0.1, pelvis_v=0.60) ++ rscales[pelvis_v] = 10/1.5  ++ time-step feature
-(  ) Jul27_11-37-24: walker without ET-rew  ++  more forward velocity reward  r_weights = dict(jpos=0.4 , jvel=0.1, ee=0.1 , pelvis_z=0.02, pelvis_v=0.38)
+(  ) Jul27_11-37-24: walker without ET-rew  ++  more forward velocity reward  r_weights = dict(jpos=0.4 , jvel=0.1, ee=0.1 , pelvis_z=0.02, pelvis_v=0.38) ++ rscales[pelvis_v] = 10/1.5  ++ time-step feature
+(  ) dm/Jul27_11-48-21: above ++ rscales[pelvis_v] = 10 ++ time-step feature ++ max_time_steps=200
+(  ) dm/Jul27_15-41-41: above ++ max_time_steps=200  ++ vfunc[-1]
+(  ) dm/Jul27_15-42-30: above ++ max_time_steps=1000 ++ vfunc[-1]
+(  ) dm/Jul27_15-50-25: above ++ noise anneal(-0.7,-1.6)

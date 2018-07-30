@@ -125,6 +125,10 @@ _DEFAULT_ARGS = {
         'type': float,
         'help': 'The amount of noise: the stdev (σ) of the gaussian policy or ϵ in ϵ-greedy',
     },
+    'explore_ratio': {
+        'type': float,
+        'help': 'The percentage of time an exploratory action is performed',
+    },
     'replay_path': {
         'help': 'If specified, the code will not train and will only replay the saved policy',
     },

@@ -30,6 +30,7 @@ def get_args():
         gamma=0.99,
         gae_lambda=0.95,
         noise=-1,  # TODO: anneal noise: LinearAnneal(-0.7, -1.6)
+        explore_ratio=1.0,
 
         nb_iters=400,
         nb_epochs=10,
@@ -77,6 +78,7 @@ def main():
         ppo = PPO(
             env, gamma=args.gamma, gae_lambda=args.gae_lambda,
             exploration_noise=args.noise,
+            explore_ratio=args.explore_ratio,
             # exploration_anneal=LinearAnneal(-0.7, -1.6),
             init_lr=args.step_size,
             hidden_layer_size=args.net_layer_size,
