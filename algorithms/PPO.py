@@ -204,7 +204,7 @@ class PPO(object):
             if done:
                 # ret = mem.calc_episode_targets(self._value_function)
                 # print(ret)
-                mem.record_new_episode(termination == 'time')
+                mem.record_new_episode()
                 state = self.env.reset()
                 num_episodes += 1
                 # if not first:
