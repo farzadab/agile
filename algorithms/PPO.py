@@ -396,8 +396,8 @@ class ReplayMemory(Data):
         self.episode_starts = []
         self.tensored = False
 
-    def record(self, s, a, r, ns, exploratory=False):
-        super().add_point(s, a, r, ns, exploratory, 0, 0, 0, 0, 0)
+    def record(self, s, a, r, ns, explore=False):
+        super().add_point(s, a, r, ns, explore, 0, 0, 0, 0, 0)
     
     def record_new_episode(self):
         self.episode_starts.append(self.size())
@@ -495,16 +495,17 @@ class ReplayMemory(Data):
         '''
         self.to_tensor()
 
-        exp_actions = [i for i, v in enumerate(self['exploratory']) if v is True]
+        exp_actions = th.tensor([i for i, v in enumerate(self['exploratory']) if v > 0.5], dtype=th.long)
+        exp_actions_len = len(exp_actions)
 
         if shuffle:
-            order = th.randperm(len(exp_actions))
+            order = th.randperm(exp_actions_len)
         else:
-            order = th.Tensor(list(range(len(exp_actions))), dtype=th.int)
+            order = list(range(exp_actions_len))
 
-        order = order[exp_actions]
+        order = exp_actions[order]
 
-        for i in range(0, self.size(), batch_size):
+        for i in range(0, exp_actions_len, batch_size):
             yield {k: self[k][order[i:i+batch_size]] for k in self.key_names}
 
 
