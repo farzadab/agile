@@ -550,14 +550,42 @@ Michiel  -----  use original state features from the SCA paper
 +++ character weighs 2.67 Kg
 
 --> r_weights = dict(jpos=0.1 , jvel=0.1, ee=0.1 , pelvis_z=0.1, pelvis_v=0.60)
-(  ) Jul26_12-18-05: walker without ET-rew  ++  more forward velocity reward
-(  ) Jul26_12-19-20: walker without ET-rew  ++  more forward velocity reward ++ less noise (-1.3)
-(  ) Jul26_12-19-55: walker without ET-rew  ++  more forward velocity reward ++ more noise (-0.7)
+(✖ ) Jul26_12-18-05: walker without ET-rew  ++  more forward velocity reward
+(✖ ) Jul26_12-19-20: walker without ET-rew  ++  more forward velocity reward ++ less noise (-1.3)
+(✖ ) Jul26_12-19-55: walker without ET-rew  ++  more forward velocity reward ++ more noise (-0.7)
+> the only difference is that the less noise version leans forward more, but the others are more conservative as expected
 
-(  ) Jul27_09-55-50: walker without ET-rew  ++  more forward velocity reward  r_weights = dict(jpos=0.1 , jvel=0.1, ee=0.1 , pelvis_z=0.1, pelvis_v=0.60) ++ rscales[pelvis_v] = 10/1.5        
-(  ) Jul27_09-59-02: walker without ET-rew  ++  more forward velocity reward  r_weights = dict(jpos=0.1 , jvel=0.1, ee=0.1 , pelvis_z=0.1, pelvis_v=0.60) ++ rscales[pelvis_v] = 10/1.5  ++ time-step feature
-(  ) Jul27_11-37-24: walker without ET-rew  ++  more forward velocity reward  r_weights = dict(jpos=0.4 , jvel=0.1, ee=0.1 , pelvis_z=0.02, pelvis_v=0.38) ++ rscales[pelvis_v] = 10/1.5  ++ time-step feature
-(  ) dm/Jul27_11-48-21: above ++ rscales[pelvis_v] = 10 ++ time-step feature ++ max_time_steps=200
+--> rscales[pelvis_v] = 10/1.5
+(✖ ) Jul27_09-55-50: walker without ET-rew  ++  more forward velocity reward
+(✖ ) Jul27_09-59-02: walker without ET-rew  ++  more forward velocity reward  ++ time-step feature
+> the one with time-step feature gets more reward, but most importantly, **its `explained_variance` (~0.98) is great**!
+
+--> r_weights = dict(jpos=0.4 , jvel=0.1, ee=0.1 , pelvis_z=0.02, pelvis_v=0.38)
+(  ) Jul27_11-37-24: walker without ET-rew  ++  more velocity/jpos reward     ++ time-step feature
+> the performance (EpsLen) drops in the end, which is strange
+(  ) dm/Jul27_11-48-21: above ++ max_time_steps=200  ++ rscales[pelvis_v] = 10 ++ time-step feature
+> dies (suicide) fast (the time-step should produce this behavior and low time-limit make it more useful/accessible)
 (  ) dm/Jul27_15-41-41: above ++ max_time_steps=200  ++ vfunc[-1]
+> performs a little bit better, but mostly the same
 (  ) dm/Jul27_15-42-30: above ++ max_time_steps=1000 ++ vfunc[-1]
+> strange: the EpsLen doesn't go high enough
 (  ) dm/Jul27_15-50-25: above ++ noise anneal(-0.7,-1.6)
+> again strange: the EpsLen drops a lot, but it seems to at least try to tkae more steps (but fails)
+> ++ at some point (iter 239) it was experimenting with taking some steps, but the behavior didn't catch on .. hmmm ..
+
+Glen  -----  don't do an exploratory action at every single step
++++ added `explore_ratio` param
+
+(  ) Jul30_11-45-58: test walker with explore_ratio=0.5 ++ vfunc[-1]
+(  ) Jul30_11-45-49: test walker with explore_ratio=0.2 ++ vfunc[-1]
+(  ) dm/Jul30_11-49-09: test walker with explore_ratio=0.1 ++ vfunc[-1]
+(  ) dm/Jul30_11-49-31: test walker with explore_ratio=0.2 and noise=-0.7 ++ vfunc[-1]
+> the naive vfunc[-1] is really a bad idea
+
+(  ) dm/Jul30_12-29-31: test walker with explore_ratio=0.4 and noise=-0.6 (more)
+(  ) dm/Jul30_12-30-15: test walker with explore_ratio=0.4 and noise=-0.4 (lots more)
+
+⇒⇒⇒ just some sanity checks
+(  ) dm/Jul30_12-37-25: just the walker with a huge batch_size (16000)
+(  ) dm/Jul30_12-42-30: test walker with larger gamma (0.995)
+(  ) dm/Jul30_12-42-57: test walker with higher gamma and lambda (0.995 and 0.97)

@@ -198,12 +198,13 @@ class PPO(object):
         num_episodes = -1
 
         termination_types = {'rew': 0, 'torso': 0, 'time': 0}
+        termination = 'time'
 
         for i_step in inf_range():
             if done:
                 # ret = mem.calc_episode_targets(self._value_function)
                 # print(ret)
-                mem.record_new_episode()
+                mem.record_new_episode(termination == 'time')
                 state = self.env.reset()
                 num_episodes += 1
                 # if not first:
@@ -231,13 +232,15 @@ class PPO(object):
                     rews.append(extra['rewards'])
             # print('\r%5.2f' % _rew, end='')
 
-            mem.record(state, act, rew, state_p, explore=explore)
+            termination = extra.get('termination', 'time')
+
+            mem.record(state, act, rew, state_p, explore=explore, timelimit=(termination == 'time'))
 
             total_rew += rew
             state = state_p
 
             if done:
-                termination_types[extra.get('termination', 'time')] += 1
+                termination_types[termination] += 1
         
         if self.writer:
             self.writer.add_scalar('Train/AvgReward', float(total_rew) / (i_step+1))
@@ -389,15 +392,16 @@ class PPO(object):
 
 
 class ReplayMemory(Data):
+    bool_tensors = ['exploratory', 'timelimit']
     def __init__(self, gamma, gae_lambda):
-        super().__init__(['state', 'action', 'reward', 'nstate', 'exploratory', 'vpred', 'td', 'adv', 'creward', 'vtarg'])
+        super().__init__(['state', 'action', 'reward', 'nstate', 'vpred', 'td', 'adv', 'creward', 'vtarg'] + self.bool_tensors)
         self.gamma = gamma
         self.gae_lambda = gae_lambda
         self.episode_starts = []
         self.tensored = False
 
-    def record(self, s, a, r, ns, explore=False):
-        super().add_point(s, a, r, ns, explore, 0, 0, 0, 0, 0)
+    def record(self, s, a, r, ns, explore=False, timelimit=False):
+        super().add_point(s, a, r, ns, 0, 0, 0, 0, 0, explore, timelimit)
     
     def record_new_episode(self):
         self.episode_starts.append(self.size())
@@ -418,8 +422,12 @@ class ReplayMemory(Data):
             #     return
             crew = 0
             adv = 0
-            # TODO fix: this is wrong, either set to 0 or just use it when the agent is still alive ...
-            vpred = vfunc(self['nstate'][-1])
+            
+            # --- Experimental feature: partial-episode bootstraping for time-unlimited tasks ---
+            #  The name was suggested here https://arxiv.org/pdf/1712.00378.pdf
+            # but the idea has been around for longer
+            vpred = vfunc(self['nstate'][-1]) if self['timelimit'][-1] else 0
+
             # print(self.episode_start_index, self.size())
             episode_return = 0
             for i in range(end-1, start-1, -1):
@@ -482,7 +490,9 @@ class ReplayMemory(Data):
 
         self.tensored = True
         for k in self.key_names:
-            if isinstance(self[k][0], th.Tensor):
+            if k in self.bool_tensors:
+                self[k] = th.ByteTensor(self[k])
+            elif isinstance(self[k][0], th.Tensor):
                 self[k] = th.stack(self[k])
             else:
                 self[k] = th.FloatTensor(self[k])

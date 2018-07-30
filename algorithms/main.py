@@ -57,6 +57,8 @@ def main():
         # FIXME: writer!
         print('loading ..... ', args.load_path)
         ppo = PPO.load(args.load_path)
+        if not hasattr(ppo, 'explore_ratio'):
+            ppo.explore_ratio = 1.0
         env = ppo.get_env()
         ppo.writer = writer
         ppo.save_path = writer.get_logdir()
@@ -144,7 +146,7 @@ def replay(args, env, ppo):
         # print('\npolicy:\n', json.dumps(dict([(k,v.tolist()) for k,v in ppo.actor.net.state_dict().items()]), sort_keys=True, indent=4))
         # print('\nvalue func:\n', json.dumps(dict([(k,v.tolist()) for k,v in ppo.critic.state_dict().items()]), sort_keys=True, indent=2))
 
-        ppo.actor.log_std[0] = -20  # simple hack to decrease the exploration level
+        # ppo.actor.log_std[0] = -20  # simple hack to decrease the exploration level
 
         mem = ReplayMemory(gamma=args.gamma, gae_lambda=0)
         ppo.sample_episode(args.batch_size, mem)
