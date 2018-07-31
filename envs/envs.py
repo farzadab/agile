@@ -18,16 +18,18 @@ class Walker2DEnv(WalkerBaseBulletEnv):
 
 class Walker2DRefEnv(Walker2DEnv):
     default_store_fname = 'walker.json'
-    def __init__(self, rsi=True, ref=WalkingPath, robot=None, ref_robot=None, et_rew=0.0):
+    def __init__(self, rsi=True, ref=WalkingPath, robot=None, ref_robot=None, et_rew=0.0, et_com=0.5):
         '''
         @param rsi: whether or not to do Random-Start-Initialization (default: True)
         @param ref: the reference (kinematic) motion
         @param robot: the model to use in simulation
         @param et_rew: the reward threshold used for early termination. set `et_rew=0` to get rid of it
+        @param et_rew: a for early termination based on the difference in CoM position. set `et_com=np.inf` to get rid of it
         '''
         self.timer = 0
         self.rsi = rsi
         self.et_rew = et_rew
+        self.et_com = et_com
         self.ref_robot = Walker2DNoMass() if ref_robot is None else ref_robot
         super().__init__(robot=robot)
         self.ref = ref
@@ -36,8 +38,8 @@ class Walker2DRefEnv(Walker2DEnv):
         high = self.observation_space.high
         low = self.observation_space.low
         self.observation_space = gym.spaces.Box(
-            np.concatenate([low, [0, 0]]),
-            np.concatenate([high, [self.ref.one_cycle_duration(), 1]]),
+            np.concatenate([low, [0]]),
+            np.concatenate([high, [self.ref.one_cycle_duration()]]),
             dtype=np.float32,
         )
 
@@ -118,6 +120,8 @@ class Walker2DRefEnv(Walker2DEnv):
         vel = self.ref.vel_at_time(self.timer)
         self.reset_stationary_pose(pose, vel)
 
+        self.camera_adjust(4)
+
         return self.get_obs_with_phase()
     
     def get_reward(self, state, action):
@@ -145,7 +149,7 @@ class Walker2DRefEnv(Walker2DEnv):
         if robot_state is None:
             robot_state = self.robot.calc_state()
         phase = self.timer % self.ref.one_cycle_duration()
-        return np.concatenate([robot_state, [phase, self.istep/1000]])
+        return np.concatenate([robot_state, [phase]])
 
     def action_transform(self, action):
         return action
@@ -166,7 +170,10 @@ class Walker2DRefEnv(Walker2DEnv):
         rew = self.get_reward(obs, action)
         extra['rewards'] = self.rewards
 
-        if rew < self.et_rew:
+        if np.sum(np.subtract(ref_pose[:3], self.robot.get_pelvis_position()) ** 2) > self.et_com:
+            done = True
+            extra['termination'] = 'com'
+        elif rew < self.et_rew:
             done = True
             extra['termination'] = 'rew'
 
@@ -179,7 +186,7 @@ class Walker2DRefEnvDM(Walker2DRefEnv):
     '''
     r_names = ['jpos', 'jvel', 'ee', 'pelvis_z', 'pelvis_v']
     r_weights = dict(jpos=0.4 , jvel=0.1, ee=0.1 , pelvis_z=0.02, pelvis_v=0.38)
-    r_scales  = dict(jpos=2   , jvel=0.1, ee=40/3, pelvis_z=10/3 , pelvis_v=10)
+    r_scales  = dict(jpos=2   , jvel=0.1, ee=40/3, pelvis_z=10/3, pelvis_v=10)
     def __init__(self, store_fname=None, ref=None, **kwargs):
         if store_fname is None:
             store_fname = self.default_store_fname
@@ -215,6 +222,7 @@ class Walker2DRefEnvDM(Walker2DRefEnv):
         # print(current['jvel'], targets['jvel'], self.rewards['jvel'])
         # print(current['pelvis'], targets['pelvis'], self.rewards['pelvis'])
         # print(current['pelvis_v'], targets['pelvis_v'], self.rewards['pelvis_v'])
+        # print(current['pelvis_z'], targets['pelvis_z'], self.rewards['pelvis_z'])
         # print(self.rewards.values())
         return sum([self.r_weights[param] * self.rewards[param] for param in self.r_names])
 

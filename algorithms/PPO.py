@@ -197,7 +197,7 @@ class PPO(object):
         rews = []
         num_episodes = -1
 
-        termination_types = {'rew': 0, 'torso': 0, 'time': 0}
+        termination_types = {'rew': 0, 'torso': 0, 'time': 0, 'com': 0}
         termination = 'time'
 
         for i_step in inf_range():
@@ -440,8 +440,8 @@ class ReplayMemory(Data):
                 td_delta = ret_1step - vpred
                 adv = td_delta + adv * self.gamma * self.gae_lambda
 
-                # if i == self.size()-1:  # correcting for the last episode
-                #     adv /= 1-self.gae_lambda
+                # if i == end-1:  # correcting for the last episode
+                #     adv /= 1 - self.gamma * self.gae_lambda
 
                 self['td'][i] = td_delta
                 self['adv'][i] = adv

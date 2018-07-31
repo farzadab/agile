@@ -576,11 +576,12 @@ Michiel  -----  use original state features from the SCA paper
 Glen  -----  don't do an exploratory action at every single step
 +++ added `explore_ratio` param
 
+--> always has `time-step feature` unless stated otherwise
 (  ) Jul30_11-45-58: test walker with explore_ratio=0.5 ++ vfunc[-1]
 (  ) Jul30_11-45-49: test walker with explore_ratio=0.2 ++ vfunc[-1]
 (  ) dm/Jul30_11-49-09: test walker with explore_ratio=0.1 ++ vfunc[-1]
 (  ) dm/Jul30_11-49-31: test walker with explore_ratio=0.2 and noise=-0.7 ++ vfunc[-1]
-> the naive vfunc[-1] is really a bad idea
+> the **naive vfunc[-1] is really a bad idea**
 
 (  ) dm/Jul30_12-29-31: test walker with explore_ratio=0.4 and noise=-0.6 (more)
 (  ) dm/Jul30_12-30-15: test walker with explore_ratio=0.4 and noise=-0.4 (lots more)
@@ -589,3 +590,20 @@ Glen  -----  don't do an exploratory action at every single step
 (  ) dm/Jul30_12-37-25: just the walker with a huge batch_size (16000)
 (  ) dm/Jul30_12-42-30: test walker with larger gamma (0.995)
 (  ) dm/Jul30_12-42-57: test walker with higher gamma and lambda (0.995 and 0.97)
+
+--> r_weights[pelvis_z] = 0
+
++++ added partial-episode bootstraping (PEB). The name comes from https://arxiv.org/pdf/1712.00378.pdf but the idea is older (Zhaoming)
+
+(  ) dm/Jul30_15-31-58: test walker with PEB
+(  ) dm/Jul30_15-32-58: test walker with PEB ++ max_episode_length=300
+(  ) dm/Jul30_16-04-51: test walker with PEB ++ max_episode_length=300 ++ without time-feature
+
++++ added ET based on CoM position
+(  ) Jul30_16-26-35: walker with ET based on CoM (1m)
+(  ) Jul31_11-05-03: walker with ET based on CoM (0.5m) ++ without time-feature
+(  ) Jul31_11-17-07: walker with ET based on CoM (0.5m) ++ without time-feature ++ 1-λ correction
+experimenting with SAC:
+-- SAC__Walker2DPDRefEnvDM_ET-com
+-- SAC__Walker2DPDRefEnvDM
+> why are they so unstable? may need more hyper-parameter tuning
