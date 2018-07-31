@@ -17,8 +17,8 @@ class Walker2DEnv(WalkerBaseBulletEnv):
 
 
 class Walker2DRefEnv(Walker2DEnv):
-    default_store_fname = 'walker.json'
-    def __init__(self, rsi=True, ref=WalkingPath, robot=None, ref_robot=None, et_rew=0.0, et_com=0.5):
+    default_store_fname = 'walker_v2.json'
+    def __init__(self, rsi=True, ref=WalkingPath, robot=None, ref_robot=None, et_rew=0.0, et_com=np.inf):
         '''
         @param rsi: whether or not to do Random-Start-Initialization (default: True)
         @param ref: the reference (kinematic) motion
@@ -58,7 +58,8 @@ class Walker2DRefEnv(Walker2DEnv):
             store = RefMotionStore(
                 dt=self.scene.dt,
                 joint_names=[joint.joint_name for joint in self.robot.ordered_joints],
-                end_eff_names=self.robot.ee_names
+                end_eff_names=self.robot.ee_names,
+                limb_names=self.robot.ordered_part_names,
             )
 
         for _ in range(timesteps):
@@ -70,11 +71,13 @@ class Walker2DRefEnv(Walker2DEnv):
             self.timer += self.scene.dt
             time.sleep(self.scene.dt)
             if store:
+                parts_pos = self.robot.get_part_positions()
                 ee_local_pos = self.robot.get_end_eff_positions()
                 store.record(
                     pose[3:],
                     ee_local_pos,
                     pose[:3],
+                    parts_pos,
                 )
 
         if store:
@@ -89,12 +92,12 @@ class Walker2DRefEnv(Walker2DEnv):
         pose = copy.copy(pose)
         if self.isRender:
             pose[1] = 1
-            self.ref_robot.reset_stationary_pose(pose[:3], pose[3:])
+            self.ref_robot.reset_stationary_pose(pose[:3], pose[3:9])
 
     def reset_stationary_pose(self, pose, vel=None):
         if vel is None:
-            vel = [0] * 9
-        self.robot.reset_stationary_pose(pose[:3], pose[3:], root_velocity=vel[:3], joint_velocities=vel[3:])
+            vel = [0] * (9 + 7 * 3)
+        self.robot.reset_stationary_pose(pose[:3], pose[3:9], root_velocity=vel[:3], joint_velocities=vel[3:9], limb_velocities=vel[9:])
         self.reset_ref_pose(pose)
 
     def _reset(self):
@@ -118,6 +121,7 @@ class Walker2DRefEnv(Walker2DEnv):
 
         pose = self.ref.pose_at_time(self.timer)
         vel = self.ref.vel_at_time(self.timer)
+
         self.reset_stationary_pose(pose, vel)
 
         self.camera_adjust(4)
@@ -307,7 +311,7 @@ def display_robot_parts_with_cube():
     part_names = list(env.robot.parts.keys())
     cube = get_cube(env._p, 0, 0, 0)
     print(part_names)
-    env._step(env.ref.pose_at_time(env.timer)[3:])
+    env._step(env.ref.pose_at_time(env.timer)[3:9])
     for i in range(1000):
         # env.timer += env.scene.dt
         # env.parts[env.robot.pelvis_partname].reset_pose(env.ref.pose_at_time(env.timer)[:3], [.1, 0, 0, 1])
@@ -326,7 +330,7 @@ def pd_drive_fixed_walker():
     env._reset()
     env._p.setGravity(0.0, 0.0, 0.0)
     for i in range(1000):
-        env._step(env.ref.pose_at_time(env.timer)[3:])
+        env._step(env.ref.pose_at_time(env.timer)[3:9])
         time.sleep(env.scene.dt)
 
 
@@ -334,11 +338,11 @@ def play_path(env, record=False, ref=None):
     if ref is not None:
         env.ref = ref
     env.render('human')
-    env.play_path(store_fname='' if record else None)
-    # env.play_path(store_fname='2d_run_slower1.5.json' if record else None)
+    # env.play_path(store_fname='' if record else None)
+    env.play_path(store_fname='walker_v2.json' if record else None)
 
 
 if __name__ == '__main__':
-    play_path(Walker2DRefEnv(), False, ref=TRLRun)
+    play_path(Walker2DRefEnv(), True, ref=TRLWalk)
     # pd_drive_fixed_walker()
     # display_robot_parts_with_cube()

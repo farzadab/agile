@@ -48,6 +48,8 @@ class Walker2D(WalkerBase):
 
     def reset(self, bullet_client):
         super().reset(bullet_client)
+        self.ordered_part_names = sorted([k for k in self.parts if k[:4] != 'link' and k != 'floor'])
+        self.ordered_parts = [self.parts[name] for name in self.ordered_part_names]
         self.pelvis = self.parts[self.pelvis_partname]
         self.correction = np.array(self.robot_body.current_position() - self.pelvis.current_position())
         self.correction[2] -= self.initial_z
@@ -68,24 +70,32 @@ class Walker2D(WalkerBase):
             for ee_name in self.end_effector_names
         ])
 
-    def reset_stationary_pose(self, root_position, joint_positions, root_velocity=[0, 0, 0], joint_velocities=None):
+    def get_part_positions(self):
+        return np.concatenate([
+            self.parts[p_name].current_position()
+            for p_name in self.ordered_part_names
+        ])
+
+    def reset_stationary_pose(self, root_position, joint_positions, root_velocity=[0, 0, 0], joint_velocities=None, limb_velocities=None):
         assert len(self.ordered_joints) == len(joint_positions)
         # root_position = copy.copy(root_position)
-
         if joint_velocities is None:
             joint_velocities = [0] * len(joint_positions)
 
-        for part in self.parts.values():
-            part.reset_velocity()
+        if limb_velocities is None or len(limb_velocities) == 0:
+            limb_velocities = [0] * (3 * len(self.ordered_part_names))
+        
+        for i, part in enumerate(self.ordered_parts):
+            part.reset_velocity(linearVelocity=limb_velocities[3*i:3*(i+1)])
 
-        # root_position[2] += 0.5j.current_relative_position()
+        # root_position[2] += 0.5#j.current_relative_position()
         # root_position[2] -= self.initial_z
 
         # self.pelvis.reset_pose(root_position + self.correction, [0.000000,	0.09983341664682815, 0.0,  0.9950041652780258,])
         # self.pelvis.reset_pose(root_position + self.correction, [0.000000,	0.137993, 0 , 0.990433])
         self.pelvis.reset_pose(root_position + self.correction, [0, 0, 0, 1])
         self.pelvis.reset_velocity(linearVelocity=root_velocity)
-        self.robot_body.reset_velocity(linearVelocity=root_velocity)
+        # self.robot_body.reset_velocity(linearVelocity=root_velocity)
         self.body_xyz = root_position
 
         for i, joint in enumerate(self.ordered_joints):

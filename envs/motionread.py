@@ -57,7 +57,7 @@ def importTRLmotion3to2(filename, path=MOCAP_PATH):
         ]).transpose()
 
         points = np.hstack([torso, joints_2d])
-        periodic = np.array([0, 1, 1, 1, 1, 1, 1, 1, 1], dtype=np.bool)
+        periodic = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=np.bool)
 
         print('error: %.4f' % ((points[-1, periodic] - points[0, periodic]) ** 2).sum())
         points[-1, periodic] = points[0, periodic]

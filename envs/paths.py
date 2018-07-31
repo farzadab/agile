@@ -7,6 +7,8 @@ import os
 from scipy.interpolate import CubicSpline, interp1d
 from scipy.misc import derivative
 
+# from numba import jit
+
 class PhasePath(object):
     'Abstract class that defines a kinematic path dependent on phase'
     def duration(self):
@@ -90,30 +92,32 @@ class RepeatingPath(TimePath):
             axis=0,
             fill_value='extrapolate',  # this shouldn't be needed
         )
-        self.cyclic_sp = CubicSpline(
-            times,
-            points[:, self.periodic],
-            axis=0,
-            bc_type='periodic',
-            extrapolate='periodic',
-        )
-        self.cyclic_sp_grad = self.cyclic_sp.derivative()
+        # self.cyclic_sp = CubicSpline(
+        #     times,
+        #     points[:, self.periodic],
+        #     axis=0,
+        #     bc_type='periodic',
+        #     extrapolate='periodic',
+        # )
+        # self.cyclic_sp_grad = self.cyclic_sp.derivative()
         self.acyclic_sp_grad = lambda x: derivative(self.acyclic_sp, x)
 
     def one_cycle_duration(self):
         return self.duration
 
+    # @jit
     def pose_at_time(self, time):
         pose = np.zeros(self.periodic.shape)
-        pose[self.periodic] = self.cyclic_sp(time)
+        # pose[self.periodic] = self.cyclic_sp(time)
         cycle_num = np.floor(time / self.duration)
         phase = time - cycle_num * self.duration
         pose[np.invert(self.periodic)] = self.acyclic_sp(phase) + cycle_num * self.acyclic_diff
         return pose
 
+    # @jit
     def vel_at_time(self, time):
         vel = np.zeros(self.periodic.shape)
-        vel[self.periodic] = self.cyclic_sp_grad(time)
+        # vel[self.periodic] = self.cyclic_sp_grad(time)
         cycle_num = np.floor(time / self.duration)
         phase = time - cycle_num * self.duration
         vel[np.invert(self.periodic)] = self.acyclic_sp_grad(phase)
@@ -133,24 +137,27 @@ class RefMotionStore(object):
         - root_pos_ind
     '''
     store_path = os.path.join(os.path.dirname(__file__), 'ref_data')
-    def __init__(self, dt=None, joint_names=[], end_eff_names=[]):
+    def __init__(self, dt=None, joint_names=[], end_eff_names=[], limb_names=[]):
         self.joint_names = joint_names
         self.end_eff_names = end_eff_names
+        self.limb_names = limb_names
         self.dt = dt       # time-step
         self.j_pos = []    # joint positions (orientations)
         self.ee_pos = []   # local (relative to root) end-effector positions
         self.root_pos = []  # center-of-mass position
-        self.j_pos_ind, self.ee_pos_ind, self.root_pos_ind = None, None, None
+        self.limb_pos = []  # world positions of the limbs
+        self.j_pos_ind, self.ee_pos_ind, self.root_pos_ind, self.limb_pos_ind = None, None, None, None
         self.path = None
 
     def set_names(self, joint_names, end_eff_names):
         self.joint_names = joint_names
         self.end_eff_names = end_eff_names
 
-    def record(self, j_pos, ee_pos, root_pos):
+    def record(self, j_pos, ee_pos, root_pos, limb_pos):
         self.j_pos.append(np.array(j_pos).tolist())
         self.ee_pos.append(np.array(ee_pos).tolist())
         self.root_pos.append(np.array(root_pos).tolist())
+        self.limb_pos.append(np.array(limb_pos).tolist())
 
     def at_time(self, timestep):
         '''
@@ -177,14 +184,16 @@ class RefMotionStore(object):
                 self.j_pos[i],
                 self.ee_pos[i],
                 self.root_pos[i],
+                self.limb_pos[i],
             ])
             for i in range(len(self.j_pos))
         ])
 
-        self.j_pos_ind, self.ee_pos_ind, self.root_pos_ind = self.__get_ranges([
+        self.j_pos_ind, self.ee_pos_ind, self.root_pos_ind, self.limb_pos_ind = self.__get_ranges([
             len(self.j_pos[0]),
             len(self.ee_pos[0]),
             len(self.root_pos[0]),
+            len(self.limb_pos[0]),
         ])
 
         periodic = np.zeros(points.shape[1], dtype=np.bool)
@@ -192,6 +201,7 @@ class RefMotionStore(object):
 
         print('error:', np.mean(np.square(points[-1, periodic] - points[0, periodic])))
         points[-1, periodic] = points[0, periodic]
+        periodic[:] = False
 
         self.path = RepeatingPath(
             duration=self.dt * len(self.j_pos),
@@ -206,11 +216,11 @@ class RefMotionStore(object):
 
     def pose_at_time(self, time):
         data = self.path.pose_at_time(time)
-        return data[np.concatenate([self.root_pos_ind, self.j_pos_ind])]
+        return data[np.concatenate([self.root_pos_ind, self.j_pos_ind, self.limb_pos_ind])]
 
     def vel_at_time(self, time):
         data = self.path.vel_at_time(time)
-        return data[np.concatenate([self.root_pos_ind, self.j_pos_ind])]
+        return data[np.concatenate([self.root_pos_ind, self.j_pos_ind, self.limb_pos_ind])]
 
     def ref_at_time(self, time):
         data = self.path.pose_at_time(time)
@@ -219,6 +229,8 @@ class RefMotionStore(object):
             'jpos': data[self.j_pos_ind],
             'jvel': v_data[self.j_pos_ind],
             'ee': data[self.ee_pos_ind],
+            'limb': data[self.limb_pos_ind],
+            'limb_v': v_data[self.limb_pos_ind],
             'pelvis': data[self.root_pos_ind],
             'pelvis_z': data[self.root_pos_ind][2],
             'pelvis_v': v_data[self.root_pos_ind],
@@ -239,10 +251,12 @@ class RefMotionStore(object):
             json.dump({
                 'joint_names': self.joint_names,
                 'end_eff_names': self.end_eff_names,
+                'limb_names': self.limb_names,
                 'dt': self.dt,
                 'j_pos': self.j_pos,
                 'ee_pos': self.ee_pos,
                 'root_pos': self.root_pos,
+                'limb_pos': self.limb_pos,
             }, fn)
 
 
