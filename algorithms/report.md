@@ -603,7 +603,12 @@ Glen  -----  don't do an exploratory action at every single step
 (  ) Jul30_16-26-35: walker with ET based on CoM (1m)
 (  ) Jul31_11-05-03: walker with ET based on CoM (0.5m) ++ without time-feature
 (  ) Jul31_11-17-07: walker with ET based on CoM (0.5m) ++ without time-feature ++ 1-λ correction
+> the 1-λ correction is done wrong: the value-function target also moves. shouldn't use it until fixed
+
 experimenting with SAC:
 -- SAC__Walker2DPDRefEnvDM_ET-com
 -- SAC__Walker2DPDRefEnvDM
 > why are they so unstable? may need more hyper-parameter tuning
+
+
+(  ) Jul31_15-40-29: test walker with fixed (??) velocities
