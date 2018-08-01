@@ -612,3 +612,8 @@ experimenting with SAC:
 
 
 (  ) Jul31_15-40-29: test walker with fixed (??) velocities
+(  ) Jul31_16-06-45: test walker with fixed (??) velocities  ++  only forward velocity reward, no vel_z or vel_y
+
+??? joint_velocities are crap, what to do about them?
+RES: the time-step is too large: the simulation time-step was 240Hz, and PD + control time-step was 60Hz
+RES: contrast this to 3K simulation, 600 PD and 30 contol in DeepLoco and 1.2K in DeepMimic

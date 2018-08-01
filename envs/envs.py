@@ -9,6 +9,7 @@ from .modified_base_envs import WalkerBaseBulletEnv
 from .walker_paths import WalkingPath, FastWalkingPath, TRLWalk, TRLStep, TRLRun
 from .paths import RefMotionStore
 
+from algorithms.plot import LinePlot
 
 class Walker2DEnv(WalkerBaseBulletEnv):
     def __init__(self, robot=None):
@@ -34,7 +35,7 @@ class Walker2DRefEnv(Walker2DEnv):
         super().__init__(robot=robot)
         self.ref = ref
         self.istep = 0
-        self.correct_state_id = False
+        self.dt = self.control_step
         high = self.observation_space.high
         low = self.observation_space.low
         self.observation_space = gym.spaces.Box(
@@ -51,12 +52,12 @@ class Walker2DRefEnv(Walker2DEnv):
         self._reset()
 
         if timesteps is None:
-            timesteps = int(np.round(self.ref.one_cycle_duration() * 10 / self.scene.dt))
+            timesteps = int(np.round(self.ref.one_cycle_duration() * 2 / self.dt))
 
         store = None
         if store_fname:
             store = RefMotionStore(
-                dt=self.scene.dt,
+                dt=self.dt,
                 joint_names=[joint.joint_name for joint in self.robot.ordered_joints],
                 end_eff_names=self.robot.ee_names,
                 limb_names=self.robot.ordered_part_names,
@@ -68,8 +69,8 @@ class Walker2DRefEnv(Walker2DEnv):
             # self.robot.body_xyz = pose[:3]  # just a hack to make the camera_adjust work
             self.camera_adjust(4, 0, 10)
 
-            self.timer += self.scene.dt
-            time.sleep(self.scene.dt)
+            self.timer += self.dt
+            time.sleep(self.dt)
             if store:
                 parts_pos = self.robot.get_part_positions()
                 ee_local_pos = self.robot.get_end_eff_positions()
@@ -104,15 +105,17 @@ class Walker2DRefEnv(Walker2DEnv):
         super()._reset()
         self.istep = 0
 
-        self.dt = self.scene.dt
+        self.dt = self.dt
+        
         # self._p.setGravity(0.0,0.0,0.0)
+
         if self.isRender:
             self.ref_robot.scene = self.scene
             self.ref_robot.reset(self._p)
 
-        if not self.correct_state_id:
+        if self.stateId < 0:
             self.stateId = self._p.saveState()
-            self.correct_state_id = True
+            # print("saving state self.stateId:",self.stateId)
 
         if self.rsi:
             self.timer = self.np_random.uniform(0, self.ref.one_cycle_duration())
@@ -159,10 +162,10 @@ class Walker2DRefEnv(Walker2DEnv):
         return action
 
     def _step(self, action):
-        self.timer += self.scene.dt
+        self.timer += self.dt
 
         if self.isRender:
-            time.sleep(self.scene.dt)
+            time.sleep(self.dt)
 
         obs, _, done, extra = super()._step(self.action_transform(action))
         self.istep += 1
@@ -197,6 +200,10 @@ class Walker2DRefEnvDM(Walker2DRefEnv):
         if ref is None:
             ref = RefMotionStore().load(store_fname)
         super().__init__(ref=ref, **kwargs)
+        # self.plot = LinePlot(xlim=[0, 1000], ylim=[-10, 10])
+        # self.plot2 = LinePlot(xlim=[0, 1000], ylim=[-10, 10])
+        # self.plot3 = LinePlot(xlim=[0, 1000], ylim=[-10, 10])
+        # self.oldjpos = [0] * 6
 
     def cur_motion_params(self):
         pelvis_p = self.robot.get_pelvis_position()
@@ -206,7 +213,7 @@ class Walker2DRefEnvDM(Walker2DRefEnv):
             'ee': self.robot.get_end_eff_positions(),
             'pelvis': pelvis_p,
             'pelvis_z': pelvis_p[2],
-            'pelvis_v': self.robot.get_pelvis_velocity(),
+            'pelvis_v': self.robot.get_pelvis_velocity()[0],
         }
 
     def get_reward(self, state, action):
@@ -221,6 +228,12 @@ class Walker2DRefEnvDM(Walker2DRefEnv):
                 )
             ) for param in self.r_names
         ])
+        # self.plot.add_point(current['jvel'][0], self.istep)
+        # self.plot2.add_point(action[0], self.istep)
+        # self.plot3.add_point(current['jpos'][0], self.istep)
+        # if self.istep > 1:
+        #     self.plot2.add_point((current['jpos'][0] - self.oldjpos[0]) / self.dt, self.istep)
+        # self.oldjpos = current['jpos']
         # print(current['jpos'], targets['jpos'], self.rewards['jpos'])
         # print(current['ee'], targets['ee'], self.rewards['ee'])
         # print(current['jvel'], targets['jvel'], self.rewards['jvel'])

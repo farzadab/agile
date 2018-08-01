@@ -10,6 +10,9 @@ from pybullet_envs.env_bases import MJCFBaseBulletEnv
 
 
 class WalkerBaseBulletEnv(MJCFBaseBulletEnv):
+    control_step = 1/30
+    llc_frame_skip = 20
+    sim_frame_skip = 2
 
     def __init__(self, robot, render=False):
         print("WalkerBase::__init__ start")
@@ -23,7 +26,9 @@ class WalkerBaseBulletEnv(MJCFBaseBulletEnv):
 
     def create_single_player_scene(self, bullet_client):
         self.stadium_scene = SinglePlayerStadiumScene(
-            bullet_client, gravity=9.8, timestep=0.0165 / 4, frame_skip=4
+            bullet_client, gravity=9.8,
+            timestep=self.control_step / self.llc_frame_skip / self.sim_frame_skip,
+            frame_skip=self.sim_frame_skip
         )
         return self.stadium_scene
 
@@ -48,9 +53,6 @@ class WalkerBaseBulletEnv(MJCFBaseBulletEnv):
             ]
         )
         self._p.configureDebugVisualizer(pybullet.COV_ENABLE_RENDERING, 1)
-        if self.stateId < 0:
-            self.stateId = self._p.saveState()
-        # print("saving state self.stateId:",self.stateId)
 
         return r
 
@@ -69,44 +71,31 @@ class WalkerBaseBulletEnv(MJCFBaseBulletEnv):
     stall_torque_cost = (
         -0.1
     )  # cost for running electric current through a motor even at zero rotational speed, small
-    foot_collision_cost = (
-        -1.0
-    )  # touches another leg, or other objects, that cost makes robot avoid smashing feet into itself
     foot_ground_object_names = set(["floor"])  # to distinguish ground and other objects
     joints_at_limit_cost = -0.1  # discourage stuck joints
 
-    def _step(self, a):
+
+    def _step(self, action):
         if (
             not self.scene.multiplayer
         ):  # if multiplayer, action first applied to all robots, then global step() called, then _step() for all robots with the same actions
-            self.robot.apply_action(a)
-            self.scene.global_step()
+            for _ in range(self.llc_frame_skip):
+                self.robot.apply_action(action)
+                self.scene.global_step()
 
         state = self.robot.calc_state()  # also calculates self.joints_at_limit
 
-        alive = float(
-            self.robot.alive_bonus(
-                state[0] + self.robot.initial_z, self.robot.body_rpy[1]
-            )
-        )  # state[0] is body height above ground, body_rpy[1] is pitch
-        done = alive < 0
+        done = False
         if not np.isfinite(state).all():
             print("~INF~", state)
             done = True
 
-        potential_old = self.potential
-        self.potential = self.robot.calc_potential()
-        progress = float(self.potential - potential_old)
-
-        feet_collision_cost = 0.0
         for i, f in enumerate(
             self.robot.feet
         ):  # TODO: Maybe calculating feet contacts could be done within the robot code
             contact_ids = set((x[2], x[4]) for x in f.contact_list())
             # print("CONTACT OF '%d' WITH %d" % (contact_ids, ",".join(contact_names)) )
             if self.ground_ids & contact_ids:
-                # see Issue 63: https://github.com/openai/roboschool/issues/63
-                # feet_collision_cost += self.foot_collision_cost
                 if self.isRender and self.debug:
                     [
                         self._p.addUserDebugLine(
@@ -125,47 +114,17 @@ class WalkerBaseBulletEnv(MJCFBaseBulletEnv):
             else:
                 self.robot.feet_contact[i] = 0.0
 
-        electricity_cost = self.electricity_cost * float(
-            np.abs(a * self.robot.joint_speeds).mean()
-        )  # let's assume we have DC motor with controller, and reverse current braking
-        electricity_cost += self.stall_torque_cost * float(np.square(a).mean())
+        self.HUD(state, action, done)
 
-        joints_at_limit_cost = float(
-            self.joints_at_limit_cost * self.robot.joints_at_limit
-        )
-        debugmode = 0
-        if debugmode:
-            print("alive=")
-            print(alive)
-            print("progress")
-            print(progress)
-            print("electricity_cost")
-            print(electricity_cost)
-            print("joints_at_limit_cost")
-            print(joints_at_limit_cost)
-            print("feet_collision_cost")
-            print(feet_collision_cost)
+        rewards_dict = self.get_rewards(state, action)
 
-        self.rewards = [
-            alive,
-            progress,
-            electricity_cost,
-            joints_at_limit_cost,
-        ]
+        extra = {'rewards': rewards_dict}
 
-        rewards_dict = OrderedDict([
-            ('alive', alive),
-            ('progress', progress),
-            ('electricity', electricity_cost),
-            ('joints_at_limit', joints_at_limit_cost),
-        ])
+        extra['termination'] = self.termination_conds(state, rewards_dict)
+        done = (extra['termination'] is not None)
 
-        if debugmode:
-            print("rewards=")
-            print(self.rewards)
-            print("sum rewards")
-            print(sum(self.rewards))
-
+        reward = sum(rewards_dict.values())
+        
         keys = self._p.getKeyboardEvents()
         if ord('1') in keys and keys[ord('1')] == self._p.KEY_WAS_RELEASED:
             # keys is a dict, so need to check key exists
@@ -182,15 +141,50 @@ class WalkerBaseBulletEnv(MJCFBaseBulletEnv):
                 lifeTime=1. / 60.,
             )
 
+        if self.debug:
+            for name, value in rewards_dict.items():
+                print('%s=%5.2f' % (name, value))
+            print("sum=%5.2f" % reward)
 
-        self.HUD(state, a, done)
-        self.reward += sum(self.rewards)
+        return state, reward, done, extra
 
-        extra = {'rewards': rewards_dict}
-        if done:
-            extra['termination'] = 'torso'
 
-        return state, sum(self.rewards), bool(done), extra
+    def termination_conds(self, state, rewards_dict):
+        if rewards_dict['alive'] < 0:
+            return 'torso'
+        return None
+
+
+    def get_rewards(self, state, action):
+
+        potential_old = self.potential
+        self.potential = self.robot.calc_potential()
+        progress = float(self.potential - potential_old)
+
+        alive = float(
+            self.robot.alive_bonus(
+                state[0] + self.robot.initial_z, self.robot.body_rpy[1]
+            )
+        )  # state[0] is body height above ground, body_rpy[1] is pitch
+
+        electricity_cost = self.electricity_cost * float(
+            np.abs(action * self.robot.joint_speeds).mean()
+        )  # let's assume we have DC motor with controller, and reverse current braking
+        electricity_cost += self.stall_torque_cost * float(np.square(action).mean())
+
+        joints_at_limit_cost = float(
+            self.joints_at_limit_cost * self.robot.joints_at_limit
+        )
+
+        rewards_dict = OrderedDict([
+            ('alive', alive),
+            ('progress', progress),
+            ('electricity', electricity_cost),
+            ('joints_at_limit', joints_at_limit_cost),
+        ])
+
+        return rewards_dict
+
 
     def camera_adjust(self, distance=10, yaw=10, pitch=-20):
         x, y, z = self.robot.body_xyz

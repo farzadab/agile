@@ -49,6 +49,27 @@ class Plot(object):
         return buf / 256#.transpose((2, 0, 1))
 
 
+class LinePlot(Plot):
+    def __init__(self, xlim=[-1,1], ylim=[-1,1], *args, **kwargs):
+        pass
+        # super().__init__(*args, **kwargs)
+        # self.subplot = self.parent._get_subplot()
+        # self.sc, = self.subplot.plot([], [], 'r-')
+        # self.subplot.set_xlim(*xlim)
+        # self.subplot.set_ylim(*ylim)
+        # self._redraw()
+
+    def add_point(self, y, x):
+        pass
+        # xs = np.append(self.sc.get_xdata(), [x])
+        # ys = np.append(self.sc.get_ydata(), [y])
+        # self.sc.set_xdata(xs)
+        # self.sc.set_ydata(ys)
+        # self.subplot.set_xlim(xs.min(), xs.max())
+        # self.subplot.set_ylim(ys.min(), ys.max())
+        # self._redraw()
+
+
 class ScatterPlot(Plot):
     def __init__(self, value_range=[-1,1], xlim=[-1,1], ylim=[-1,1], palette='seismic', *args, **kwargs):
         super().__init__(*args, **kwargs)
