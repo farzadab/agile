@@ -233,7 +233,7 @@ class RefMotionStore(object):
             'limb_v': v_data[self.limb_pos_ind],
             'pelvis': data[self.root_pos_ind],
             'pelvis_z': data[self.root_pos_ind][2],
-            'pelvis_v': v_data[self.root_pos_ind],
+            'pelvis_v': v_data[self.root_pos_ind][0],
         }
 
     def load(self, file_name):

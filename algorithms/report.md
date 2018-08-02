@@ -617,3 +617,18 @@ experimenting with SAC:
 ??? joint_velocities are crap, what to do about them?
 RES: the time-step is too large: the simulation time-step was 240Hz, and PD + control time-step was 60Hz
 RES: contrast this to 3K simulation, 600 PD and 30 contol in DeepLoco and 1.2K in DeepMimic
+
+## 01/08/2018 - Commit 921abbec45ddac8a508eefa36fa61fe4c2f7e610
+
+(✔ ) Aug01_14-19-21: test walker with control_step = 1/30 llc_frame_skip = 20 sim_frame_skip = 2
+> terminated due to bug, continued in Aug02_10-27-53
+> it actually walks! it's not that good (takes long steps and is really slow), but it's better than standing around!
+(  ) Aug02_10-27-53: continuing Aug01_14-19-21 (terminated by coding bug)
+
+(  ) Aug01_15-50-15: test walker with control_step = 1/30 llc_frame_skip = 20 sim_frame_skip = 2  ++  ET-reward
+> strangely, it's not so good
+(  ) dm/Aug01_16-06-50: test walker with control_step = 1/30 llc_frame_skip = 20 sim_frame_skip = 2  ++  ET-reward  ++  `kp=kd=4`
+> works good, takes really small steps (and is slow)
+(  ) dm/Aug02_10-30-24: test walker with control_step = 1/30 llc_frame_skip = 20 sim_frame_skip = 2  ++  ET-rew  ++  kp=kd=8
+(  ) dm/Aug02_10-44-50: test walker with control_step = 1/30 llc_frame_skip = 20 sim_frame_skip = 2  ++  ET-rew  ++  kp=kd=16
+(  ) dm/Aug02_10-45-23: test walker with control_step = 1/30 llc_frame_skip = 20 sim_frame_skip = 2  ++  kp=kd=16           

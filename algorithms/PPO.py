@@ -232,7 +232,7 @@ class PPO(object):
                     rews.append(extra['rewards'])
             # print('\r%5.2f' % _rew, end='')
 
-            termination = extra.get('termination', 'time')
+            termination = extra.get('termination', 'time') or 'time'
 
             mem.record(state, act, rew, state_p, explore=explore, timelimit=(termination == 'time'))
 
