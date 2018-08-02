@@ -18,6 +18,8 @@ class WalkerBase(MJCFBasedRobot):
 		self.walk_target_x = 1e3  # kilometer away
 		self.walk_target_y = 0
 		self.body_xyz=[0,0,0]
+		self._istep = 0
+		self._debug = False
 
 	def robot_specific_reset(self, bullet_client):
 		self._p = bullet_client
@@ -30,9 +32,12 @@ class WalkerBase(MJCFBasedRobot):
 		self.initial_z = None
 
 	def apply_action(self, a):
+		self._istep += 1
 		assert (np.isfinite(a).all())
 		for n, j in enumerate(self.ordered_joints):
 			j.set_motor_torque(self.power * j.power_coef * float(np.clip(a[n], -1, +1)))
+			if self._debug and n == 0:
+				self.plot4.add_point(self.power * j.power_coef * float(np.clip(a[n], -1, +1)), self._istep)
 
 	def calc_state(self):
 		j = np.array([j.current_relative_position() for j in self.ordered_joints], dtype=np.float32).flatten()

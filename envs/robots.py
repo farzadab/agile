@@ -7,7 +7,7 @@ import gym
 import os
 
 from .robot_locomotors import WalkerBase
-
+from algorithms.plot import LinePlot
 
 CUR_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -125,12 +125,24 @@ class Walker2DNoMass(WalkerV2):
 class Walker2DPD(WalkerV2):
     kp = 2
     kd = 2
+    def __init__(self):
+        super().__init__()
+        if self._debug:
+            self.plot = LinePlot(xlim=[0, 1000], ylim=[-10, 10])
+            self.plot2 = LinePlot(xlim=[0, 1000], ylim=[-10, 10])
+            self.plot3 = LinePlot(xlim=[0, 1000], ylim=[-10, 10])
+            self.plot4 = LinePlot(xlim=[0, 1000], ylim=[-10, 10])
+
     def apply_action(self, a):
         joint_pose = np.array(
             [j.current_relative_position() for j in self.ordered_joints],
             dtype=np.float32
         )
         action = self.kp * (a - joint_pose[:, 0]) - self.kd * joint_pose[:, 1]
+        if self._debug:
+            self.plot.add_point(joint_pose[0, 1], self._istep)
+            self.plot2.add_point(joint_pose[0, 0], self._istep)
+            self.plot3.add_point(a[0], self._istep)
         super().apply_action(action)
 
 

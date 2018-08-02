@@ -632,3 +632,5 @@ RES: contrast this to 3K simulation, 600 PD and 30 contol in DeepLoco and 1.2K i
 (  ) dm/Aug02_10-30-24: test walker with control_step = 1/30 llc_frame_skip = 20 sim_frame_skip = 2  ++  ET-rew  ++  kp=kd=8
 (  ) dm/Aug02_10-44-50: test walker with control_step = 1/30 llc_frame_skip = 20 sim_frame_skip = 2  ++  ET-rew  ++  kp=kd=16
 (  ) dm/Aug02_10-45-23: test walker with control_step = 1/30 llc_frame_skip = 20 sim_frame_skip = 2  ++  kp=kd=16           
+> terminated due to bug, continued in Aug02_11-52-17
+(  ) dm/Aug02_11-52-17: continuing Aug02_10-45-23
