@@ -178,7 +178,7 @@ class SymmetricTRLWalker(TRLWalker):
         left_side = state[7+len(self.part_names)*3:]
 
         if left_side[0] > right_side[0]:  # the first leg is always the one with the thigh in front
-            return np.concatenate([[pelvis, left_side, right_side]])
+            return np.concatenate([pelvis, left_side, right_side])
 
         return state
 
