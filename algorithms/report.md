@@ -623,14 +623,43 @@ RES: contrast this to 3K simulation, 600 PD and 30 contol in DeepLoco and 1.2K i
 (✔ ) Aug01_14-19-21: test walker with control_step = 1/30 llc_frame_skip = 20 sim_frame_skip = 2
 > terminated due to bug, continued in Aug02_10-27-53
 > it actually walks! it's not that good (takes long steps and is really slow), but it's better than standing around!
-(  ) Aug02_10-27-53: continuing Aug01_14-19-21 (terminated by coding bug)
+(✔ ) Aug02_10-27-53: continuing Aug01_14-19-21 (terminated by coding bug)
+> more robust and faster, but not following the motion closely
 
-(  ) Aug01_15-50-15: test walker with control_step = 1/30 llc_frame_skip = 20 sim_frame_skip = 2  ++  ET-reward
+--> control_step = 1/30 llc_frame_skip = 20 sim_frame_skip = 2
+
+(✖ ) Aug01_15-50-15: test walker  ++  ET-reward (control step: 15Hz)
 > strangely, it's not so good
-(  ) dm/Aug01_16-06-50: test walker with control_step = 1/30 llc_frame_skip = 20 sim_frame_skip = 2  ++  ET-reward  ++  `kp=kd=4`
+(✔ ) dm/Aug01_16-06-50: test walker  ++  ET-reward  ++  `kp=kd=4` (control step: 15Hz)
 > works good, takes really small steps (and is slow)
-(  ) dm/Aug02_10-30-24: test walker with control_step = 1/30 llc_frame_skip = 20 sim_frame_skip = 2  ++  ET-rew  ++  kp=kd=8
-(  ) dm/Aug02_10-44-50: test walker with control_step = 1/30 llc_frame_skip = 20 sim_frame_skip = 2  ++  ET-rew  ++  kp=kd=16
-(  ) dm/Aug02_10-45-23: test walker with control_step = 1/30 llc_frame_skip = 20 sim_frame_skip = 2  ++  kp=kd=16           
+(✔ ) dm/Aug02_10-30-24: test walker  ++  ET-rew  ++  kp=kd=8 (control step: 15Hz)
+> almost the same as the above
+(✔ ) dm/Aug02_10-44-50: test walker  ++  ET-rew  ++  kp=kd=16 (control step: 15Hz)
+> almost the same as the above, but a tad worse
+(✖ ) dm/Aug02_10-45-23: test walker  ++  kp=kd=16 (control step: 15Hz)
 > terminated due to bug, continued in Aug02_11-52-17
-(  ) dm/Aug02_11-52-17: continuing Aug02_10-45-23
+(✖ ) dm/Aug02_11-52-17: continuing Aug02_10-45-23
+> just learns to stand around
+
++++ Ben helped me figure out why low gains are better for me: I was ignoring the extra multiplication factors:
++++ self.power * j.power_coef ~= 0.4 * 100 = 40
++++ so 40 * 2 / 2 ~= 80 which close to the normally suggested values
++++ so kp=5 and kd=2.5 would be almost the correct values: kp_c = 5 * 40 / 2 = 100  and  kd_c = 2.5 * 40 / 10 = 10
+
+(✖ ) dm/Aug02_13-43-24: test walker  ++  kp=3,kd=5 (control step: 15Hz)
+> just learns to stand around
+
+(  ) dm/Aug03_10-58-53: test walker  ++  kp=2,kd=4 (control step: 15Hz)
+
++++ I was actually using a control step of 15 instead of 30 (shouldn't have used the multi-step here): using the correct one
+
+(  ) dm/Aug03_10-59-21: test walker  ++  kp=2,kd=4    (control step = 30Hz)
+(  ) dm/Aug03_11-13-36: test walker  ++  kp=2,kd=1.6  (control step = 30Hz)
+(  ) dm/Aug03_11-37-59: test walker  ++  kp=5,kd=2.5  (control step = 30Hz)
+(  ) dm/Aug03_12-22-42: same  ++  r_rewards=dict(jpos=0.15 , jvel=0.3, ee=0.1 , pelvis_z=0.02, pelvis_v=0.43)
+(  ) dm/Aug03_12-44-45: same but for TRLWalkerPD (has bug)
+> TRLWalker has a bug in the termination, fixing
+(  ) dm/Aug03_14-21-44: same but for TRLWalkerPD (fixed ET bug)
+
++++ gotta fix the termination criteria for TRLWalker
++++ symmetric gate

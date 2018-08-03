@@ -107,6 +107,13 @@ register(
 )
 
 register(
+    id="SymTRLWalkerPDEnvDM-v0",
+    entry_point="envs.envs:SymmetricTRLWalkerPDEnvDM",
+    max_episode_steps=1000,
+    reward_threshold=2500.0,
+)
+
+register(
     id="TRLRunEnvDM-v3",
     entry_point="envs.envs:TRLSlowRunPDEnvDM",
     max_episode_steps=1000,

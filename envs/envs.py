@@ -4,7 +4,7 @@ import gym
 import time
 import copy
 
-from .robots import WalkerV2, Walker2DNoMass, Walker2DPD, FixedWalker, FixedPDWalker, TRLWalker
+from .robots import WalkerV2, Walker2DNoMass, Walker2DPD, FixedWalker, FixedPDWalker, TRLWalker, SymmetricTRLWalker
 from .modified_base_envs import WalkerBaseBulletEnv
 from .walker_paths import WalkingPath, FastWalkingPath, TRLWalk, TRLStep, TRLRun
 from .paths import RefMotionStore
@@ -305,6 +305,11 @@ class TRLRunPDEnvDM(Walker2DPDRefEnvDM):
 class TRLWalkerPDEnvDM(Walker2DRefEnvDM):
     def __init__(self, robot=None):
         super().__init__(robot=robot or TRLWalker())
+
+
+class SymmetricTRLWalkerPDEnvDM(Walker2DRefEnvDM):
+    def __init__(self, robot=None):
+        super().__init__(robot=robot or SymmetricTRLWalker())
 
 
 class TRLSlowRunPDEnvDM(TRLWalkerPDEnvDM):
