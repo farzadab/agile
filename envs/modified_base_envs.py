@@ -163,7 +163,7 @@ class WalkerBaseBulletEnv(MJCFBaseBulletEnv):
 
         alive = float(
             self.robot.alive_bonus(
-                state[0] + self.robot.initial_z, self.robot.body_rpy[1]
+                self.robot.body_xyz[2], self.robot.body_rpy[1]
             )
         )  # state[0] is body height above ground, body_rpy[1] is pitch
 
