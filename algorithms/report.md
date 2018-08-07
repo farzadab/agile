@@ -655,11 +655,22 @@ RES: contrast this to 3K simulation, 600 PD and 30 contol in DeepLoco and 1.2K i
 
 (  ) dm/Aug03_10-59-21: test walker  ++  kp=2,kd=4    (control step = 30Hz)
 (  ) dm/Aug03_11-13-36: test walker  ++  kp=2,kd=1.6  (control step = 30Hz)
-(  ) dm/Aug03_11-37-59: test walker  ++  kp=5,kd=2.5  (control step = 30Hz)
+(  ) dm/Aug03_11-37-59: test walker  ++  kp=5,kd= 2.5  (control step = 30Hz)
 (  ) dm/Aug03_12-22-42: same  ++  r_rewards=dict(jpos=0.15 , jvel=0.3, ee=0.1 , pelvis_z=0.02, pelvis_v=0.43)
 (  ) dm/Aug03_12-44-45: same but for TRLWalkerPD (has bug)
-> TRLWalker has a bug in the termination, fixing
+> TRLWalker has a bug in the termination, fixing 
 (  ) dm/Aug03_14-21-44: same but for TRLWalkerPD (fixed ET bug)
 
 +++ gotta fix the termination criteria for TRLWalker
 +++ symmetric gate
+
+(  ) dm/Aug03_14-47-26: SymmetricTRLWalker with multi_step 2 and kp=kd=2 (no ET-rew)
+
+??? what if we just give it 0 reward if reward is too low?
+(  ) dm/Aug03_15-59-27: SymmetricTRLWalker with multi_step 2 and kp=kd=2 (rew threshold 0.1)
+(  ) dm/Aug03_16-00-59: SymmetricTRLWalker with multi_step 2 and kp=kd=2 (rew threshold 0.2)
+
++++ symmetricwalker had a bug: only the state changed, not the actions
++++ but it's still bad, since the change criteria is not good: when it's swinging forward, it oscillates
+
+Zhaoming  -----  use PD residual
