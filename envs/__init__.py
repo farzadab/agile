@@ -119,3 +119,10 @@ register(
     max_episode_steps=1000,
     reward_threshold=2500.0,
 )
+
+register(
+    id="WalkerRefAssistPDEnvDM-v0",
+    entry_point="envs.envs:WalkerRefAssistPDEnvDM",
+    max_episode_steps=1000,
+    reward_threshold=2500.0,
+)
