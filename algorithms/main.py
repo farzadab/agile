@@ -1,5 +1,5 @@
 from algorithms.PPO import PPO
-from algorithms.senv import SerializableEnv
+from envs.mapper import SerializableEnv
 from argparser import Args
 from logs import LogMaster, ConsoleWriter, AverageWriter
 from algorithms.anneal import LinearAnneal

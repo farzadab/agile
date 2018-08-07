@@ -7,7 +7,7 @@ import gym
 
 # load my environments
 import cust_envs, envs
-from algorithms.senv import SerializableEnv
+from envs.mapper import SerializableEnv
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -59,10 +59,11 @@ def main():
             # else:
             time.sleep(1 / 60)
             action = actionSpace.sample()
-            observation, reward,  done, info = env.step(actionSpace.sample())
+            # action = np.array([0, 0, 0, 0, 0, 0])
+            observation, reward,  done, info = env.step(action)
             # observation, reward,  done, info = env.step(np.ones(actionSpace.shape))
-            print ("Reward: ", reward, "Action: ", action, " observation: ", observation)
-            print ("Done: ", done)
+            # print ("Reward: ", reward, "Action: ", action, " observation: ", observation)
+            # print ("Done: ", done)
             if env.action_space.shape != action.shape:
                 raise ValueError('Action space and action do not match!')
             if env.observation_space.shape != observation.shape:

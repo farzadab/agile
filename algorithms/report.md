@@ -673,4 +673,13 @@ RES: contrast this to 3K simulation, 600 PD and 30 contol in DeepLoco and 1.2K i
 +++ symmetricwalker had a bug: only the state changed, not the actions
 +++ but it's still bad, since the change criteria is not good: when it's swinging forward, it oscillates
 
+## 07/08/2018 - Commit 5d61bc23541694100ce7f76dfba0a2da4ac6867d - RefAssistedWalker
+
 Zhaoming  -----  use PD residual
+
+(  ) Aug07_10-41-39: ref assisted walker
+(  ) Aug07_13-15-28: ref assisted walker with higher torque limit
+
+
+## 07/08/2018 - Commit 
+(  ) Aug07_12-51-07: PMFollow
