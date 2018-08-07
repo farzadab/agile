@@ -39,7 +39,7 @@ class PMFollow(PointMass):
         self.phase = 0
         # if self.randomize_goal:
         #     self.phase = self.np_random.uniform(self.phase_start, self.phase_end)
-        # self._set_goal_pos()
+        self._set_goal_pos()
         if self.start_at_goal:
             self.state[0:2] = self.state[2:4]
         return self._get_obs()

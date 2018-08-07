@@ -101,7 +101,7 @@ class PointMass(gym.Env):
         p, v = self._integrate(p, v, u)
 
         distance = np.linalg.norm(g-p)
-        reward += self.reward_style['vel']  * np.dot(v, g-p) / distance - .001*(np.linalg.norm(u)**2)
+        reward += self.reward_style['vel']  * (np.dot(v, g-p) / distance - .001*(np.linalg.norm(u)**2))
         reward -= self.reward_style['pos']  * (distance / self.max_position) ** 2
         reward += self.reward_style['pexp'] * np.exp(-1 * distance)
 
@@ -112,7 +112,7 @@ class PointMass(gym.Env):
         done = reached or (self.i_step >= self.max_steps)
 
         self.state = np.concatenate([p, g, v])
-        return self._get_obs(), float(reward), done, {}
+        return self._get_obs(), float(reward), done, {'termination': 'rew'}
 
     def _integrate(self, p, v, u):
         # just a simple (dumb) explicit integration ... 
