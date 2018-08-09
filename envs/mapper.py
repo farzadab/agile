@@ -8,7 +8,7 @@ from algorithms.senv import PointMass, PointMassV2, NStepPointMass, CircularPoin
                             SquarePhaseSAG_NC, StepsPhaseSAG, StepsPhaseSAG_NC, PhaseRN1, \
                             PhaseRN1_NC, PhaseRN2, PhaseRN2_NC
 
-from envs.pmfollow import PMFollow, PMFollow1, PMFollow4, PMFollow8\
+from envs.pmfollow import PMFollow, PMFollow1, PMFollow4, PMFollow8, \
                           PMFollowIceMid, PMFollowIceMid1, PMFollowIceMid4, PMFollowIceMid8
 
 
