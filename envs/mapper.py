@@ -8,7 +8,8 @@ from algorithms.senv import PointMass, PointMassV2, NStepPointMass, CircularPoin
                             SquarePhaseSAG_NC, StepsPhaseSAG, StepsPhaseSAG_NC, PhaseRN1, \
                             PhaseRN1_NC, PhaseRN2, PhaseRN2_NC
 
-from envs.pmfollow import PMFollow
+from envs.pmfollow import PMFollow, PMFollow1, PMFollow4, PMFollow8\
+                          PMFollowIceMid, PMFollowIceMid1, PMFollowIceMid4, PMFollowIceMid8
 
 
 class MultiStepEnv(ObjectWrapper):
@@ -50,7 +51,14 @@ _ENV_MAP = dict(
     PhaseRN2=PhaseRN2,
     PhaseRN2_NC=PhaseRN2_NC,
     # TPhase=TriPhaseSAG,
-    PMFollow1=PMFollow,
+    PMFollow1=PMFollow1,
+    PMFollow2=PMFollow,
+    PMFollow4=PMFollow4,
+    PMFollow8=PMFollow8,
+    PMFollowIceMid1=PMFollowIceMid1,
+    PMFollowIceMid2=PMFollowIceMid,
+    PMFollowIceMid4=PMFollowIceMid4,
+    PMFollowIceMid8=PMFollowIceMid8,
 )
 
 

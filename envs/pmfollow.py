@@ -69,6 +69,21 @@ class PMFollow(PointMass):
             ])
 
 
+class PMFollow1(PMFollow):
+    def __init__(self, *args, **kwargs):
+        super().__init__(nb_lookaheads=1, *args, **kwargs)
+
+
+class PMFollow4(PMFollow):
+    def __init__(self, *args, **kwargs):
+        super().__init__(nb_lookaheads=4, *args, **kwargs)
+
+
+class PMFollow8(PMFollow):
+    def __init__(self, *args, **kwargs):
+        super().__init__(nb_lookaheads=8, *args, **kwargs)
+
+
 class PGen(object):
     def gen_path(self):
         raise NotImplementedError
@@ -87,3 +102,35 @@ class RPGen(PGen):
             ],
             smooth=True,
         )
+
+
+class PMFollowIce(PMFollow):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    def control_coeff(self, p, v, u):
+        return 1
+    def _integrate(self, p, v, u):
+        super()._integrate(
+            p,
+            v,
+            u * self.control_coeff(p, v, u)
+        )
+
+
+class PMFollowIceMid(PMFollowIce):
+    def control_coeff(self, p, v, u):
+        if abs(p[1]) < self.max_position / 4:
+            return 0.1
+        return 1
+
+class PMFollowIceMid1(PMFollowIceMid):
+    def __init__(self, *args, **kwargs):
+        super().__init__(nb_lookaheads=1, *args, **kwargs)
+
+class PMFollowIceMid4(PMFollowIceMid):
+    def __init__(self, *args, **kwargs):
+        super().__init__(nb_lookaheads=4, *args, **kwargs)
+
+class PMFollowIceMid8(PMFollowIceMid):
+    def __init__(self, *args, **kwargs):
+        super().__init__(nb_lookaheads=8, *args, **kwargs)

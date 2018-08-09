@@ -112,7 +112,7 @@ class PointMass(gym.Env):
         done = reached or (self.i_step >= self.max_steps)
 
         self.state = np.concatenate([p, g, v])
-        return self._get_obs(), float(reward), done, {'termination': 'rew'}
+        return self._get_obs(), float(reward), done, {'termination': 'time'}
 
     def _integrate(self, p, v, u):
         # just a simple (dumb) explicit integration ... 

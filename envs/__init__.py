@@ -126,3 +126,10 @@ register(
     max_episode_steps=1000,
     reward_threshold=2500.0,
 )
+
+register(
+    id="WalkerProgress-v0",
+    entry_point="envs.envs:WalkerProgress",
+    max_episode_steps=1000,
+    reward_threshold=2500.0,
+)

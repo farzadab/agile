@@ -85,7 +85,7 @@ class PPO(object):
             self.actor.net.parameters(), lr=self.init_lr,
             betas=(0.95, 0.999), eps=1e-06)
         self.critic_optim = th.optim.Adam(
-            self.critic.parameters(), lr=self.init_lr,
+            self.critic.parameters(), lr=self.init_lr * 3,
             betas=(0.95, 0.999), eps=1e-06)
         
         self.scheduler = MultiOptimScheduler(

@@ -192,7 +192,7 @@ class Walker2DRefEnvDM(Walker2DRefEnv):
     Walker2DRef environment with the corrected rewards
     '''
     r_names = ['jpos', 'jvel', 'ee', 'pelvis_z', 'pelvis_v']
-    r_weights = dict(jpos=0.4 , jvel=0.1, ee=0.1 , pelvis_z=0.02, pelvis_v=0.38)
+    r_weights = dict(jpos=0.0 , jvel=0.0, ee=0.0 , pelvis_z=0.00, pelvis_v=1.0)
     r_scales  = dict(jpos=2   , jvel=0.1, ee=40/3, pelvis_z=10/3, pelvis_v=10)
     def __init__(self, store_fname=None, ref=None, **kwargs):
         if store_fname is None:
@@ -242,6 +242,15 @@ class Walker2DRefEnvDM(Walker2DRefEnv):
         # print(current['pelvis_z'], targets['pelvis_z'], self.rewards['pelvis_z'])
         # print(self.rewards.values())
         return sum([self.r_weights[param] * self.rewards[param] for param in self.r_names])
+
+
+class WalkerProgress(Walker2DRefEnvDM):
+    def get_reward(self, state, action):
+        self.rewards = OrderedDict([
+            ('progres', self.cur_motion_params()['pelvis_v']),
+            ('alive', 0.1),
+        ])
+        return sum(self.rewards.values())
 
 
 class FastWalker2DRefEnvDM(Walker2DRefEnvDM):

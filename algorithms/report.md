@@ -679,7 +679,29 @@ Zhaoming  -----  use PD residual
 
 (  ) Aug07_10-41-39: ref assisted walker
 (  ) Aug07_13-15-28: ref assisted walker with higher torque limit
+(  ) Aug07_15-48-24: residual with only forward velocity reward (and higher torque limit)
+> works great! the speed is matched really closely: less than 1m difference after 20m of walking
+(  ) Aug08_11-10-54: same but without the residual
+(  ) Aug08_14-05-44: same but only velocity reward (not match velocity, but move forward)
+(  ) Aug09_11-12-03: same + alive bonus (0.1)
 
 
-## 07/08/2018 - Commit 
-(  ) Aug07_12-51-07: PMFollow
+
+## 07/08/2018 - Commit 4ebeb848faf9de1cad19c32e8a8e9ac2eb650f3d
+(3 ) Aug07_14-44-37: PMFollow with distexp (batch size: 2000)
+(1 ) Aug07_15-05-55: PMFollow(2) ++ distexp ++ smaller net (2 layers of 10) ++ larger batch size (4000)
+> best performance here
+--> mapper name changed from PMFollow1 to PMFollow2
+(4 ) Aug07_16-49-32: PMFollow(1) ++ distexp ++ smaller net (2 layers of 10) ++ larger batch size
+(2 ) Aug07_16-50-42: PMFollow(4) ++ distexp ++ smaller net (2 layers of 10) ++ larger batch size
+
+(  ) Aug08_10-53-57: PMFollow(2) ++ distexp ++ smaller net (2 layers of 10) ++ larger batch size ++ lambda=0.5
+(  ) Aug08_10-54-54: PMFollow(2) ++ distexp ++ smaller net (2 layers of 10) ++ larger batch size ++ lambda=0.5 ++ gamma=0.7
+(  ) Aug08_12-52-55: PMFollow(2) ++ distexp ++ smaller net (2 layers of 10) ++ larger batch size ++ lambda=0.8
+--> critic lr: x200
+(  ) Aug08_13-56-35: PMFollow(2) ++ distexp ++ smaller net (2 layers of 10) ++ larger batch size ++ lambda=0.8 ++ no PEB
+> pretty much shows that **PEB is necessary!** (but except for the critic lr change)
+(  ) Aug08_14-32-57: PMFollow(2) ++ distexp ++ smaller net (2 layers of 10) ++ larger batch size ++ lambda=0.98 (x200 critic lr)
+(  ) Aug08_14-37-19: PMFollow(2) ++ distexp ++ smaller net (2 layers of 10) ++ larger batch size ++ lambda=0.98 (x20  critic lr)
+(  ) Aug09_11-04-53: PMFollow(2) ++ distexp ++ smaller net (2 layers of 10) ++ larger batch size ++ lambda=0.98 (x5   critic lr)
+(  ) Aug09_11-17-19: PMFollow(2) ++ distexp ++ smaller net (2 layers of 10) ++ larger batch size ++ lambda=0.98 (x1   critic lr)
