@@ -68,8 +68,8 @@ _DEFAULT_ARGS = {
     'desc': {
         'help': 'Description of what the experiment is trying to accomplish',
     },
-    'log_dir': {
-        'help': 'Logging directory',
+    'logdir_comment': {
+        'help': 'A commment that is appended to the logging directory address',
     },
     'timesteps': {
         'type': int,
