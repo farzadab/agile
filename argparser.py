@@ -151,6 +151,10 @@ _DEFAULT_ARGS = {
         'type': str2bool,
         'help': 'Whether or not to store the result and logs (tensorboard, variants, etc)',
     },
+    'replay_noise': {
+        'type': str2bool,
+        'help': 'Whether to replay the noisy policy or a deterministic one',
+    },
     'ctrl': {
         'help': 'Name of the controller to use',
     },
