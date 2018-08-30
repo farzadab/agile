@@ -17,9 +17,10 @@ from algorithms.senv import PointMass
 class PMFollow(PointMass):
     max_speed = 4.
     # TODO: use arg to see if phase should be shown or act
-    def __init__(self, path_gen=None, nb_lookaheads=2, goal_in_state=False, include_goal_vel=False, start_at_goal=True, *args, **kwargs):
+    def __init__(self, path_gen=None, nb_lookaheads=2, lookahead_skip=5, goal_in_state=False, include_goal_vel=False, start_at_goal=True, *args, **kwargs):
         self.parent_indices = [0,1,4,5]
         self.goal_in_state = goal_in_state
+        self.lookahead_skip = lookahead_skip
         self.include_goal_vel = include_goal_vel
         super().__init__(reset=False, *args, **kwargs)
         # self.phase_start = 0
@@ -65,12 +66,12 @@ class PMFollow(PointMass):
             [
                 self.state[self.parent_indices],
                 self.max_position * np.concatenate([
-                    self.path.at_point(self.phase + i * self.dt)
+                    self.path.at_point(self.phase + i * self.lookahead_skip * self.dt / self.path.duration())
                     for i in range(1-self.goal_in_state, self.nb_lookaheads+1)
                 ]),
                 [] if not self.include_goal_vel else
                     self.max_position / self.path.duration() * np.concatenate([
-                        self.path.grad_at_point(self.phase + i * self.dt)
+                        self.path.grad_at_point(self.phase + i * self.lookahead_skip * self.dt / self.path.duration())
                         for i in range(1-self.goal_in_state, self.nb_lookaheads+1)
                     ])
             ])
@@ -92,7 +93,7 @@ class PMFollow(PointMass):
     def _do_transforms(self):
         super()._do_transforms()
         for i, t in enumerate(self.lookahead_transforms):
-            point = self.max_position * np.array(self.path.at_point(self.phase + (i+1) * self.dt))
+            point = self.max_position * np.array(self.path.at_point(self.phase + (i+1) * self.lookahead_skip * self.dt / self.path.duration()))
             t.set_translation(point[0], point[1])
 
 

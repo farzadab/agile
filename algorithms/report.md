@@ -770,3 +770,17 @@ Zhaoming  -----  use PD residual
 (  ) Aug29_11-16-44: fixed PMFollowGIceMid2
 (  ) Aug29_11-16-53: fixed PMFollowGIceMid4
 (  ) Aug29_11-17-07: fixed PMFollowGIceMid8
+
+
+⇒⇒⇒ the effect of lookaheads and giving it velocity information
+
+(  ) Aug30_12-00-21_cdr752: PMFollowG1
+(  ) Aug30_12-00-21_cdr761: PMFollowG2
+(  ) Aug30_12-00-21_cdr582: PMFollowG4
+(  ) Aug30_12-00-21_cdr582: PMFollowG8
+(  ) Aug30_12-00-21_cdr642: PMFollowGV1
+(  ) Aug30_12-00-21_cdr642: PMFollowGV2
+(  ) Aug30_12-00-21_cdr752: PMFollowGV4
+(  ) Aug30_12-00-21_cdr752: PMFollowGV8
+
++++ the lookaheads were 50 timesteps apart, trying 1
