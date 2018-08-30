@@ -133,3 +133,24 @@ register(
     max_episode_steps=1000,
     reward_threshold=2500.0,
 )
+
+register(
+    id="Walker2DPDDistSq-v0",
+    entry_point="envs.envs:Walker2DPDDistSq",
+    max_episode_steps=1000,
+    reward_threshold=2500.0,
+)
+
+register(
+    id="Walker2DPDDistSq-v1",
+    entry_point="envs.envs:Walker2DPDDistSq",
+    max_episode_steps=200,
+    reward_threshold=2500.0,
+)
+
+register(
+    id="Walker2DPDETFall-v0",
+    entry_point="envs.envs:Walker2DPDETFall",
+    max_episode_steps=1000,
+    reward_threshold=2500.0,
+)

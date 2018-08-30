@@ -7,7 +7,7 @@ import numpy as np
 import pybullet 
 import os
 import pybullet_data
-from pybullet_envs.robot_bases import BodyPart
+from .robot_bases import BodyPart
 
 class WalkerBase(MJCFBasedRobot):
 	def __init__(self,  fn, robot_name, action_dim, obs_dim, power):

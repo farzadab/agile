@@ -140,30 +140,26 @@ class PointMass(gym.Env):
         return self.state
         # theta, thetadot = self.state
         # return np.array([np.cos(theta), np.sin(theta), thetadot])
-
-    def render(self, mode='human'):
+    
+    def _get_geoms(self):
         from gym.envs.classic_control import rendering
-        if self.viewer is None:
-            self.viewer = rendering.Viewer(500,500)
-            self.viewer.set_bounds(-self.max_position, self.max_position, -self.max_position, self.max_position)
-            
-            point = rendering.make_circle(1)
-            point.set_color(.1, .8, .3)
-            self.point_transform = rendering.Transform()
-            point.add_attr(self.point_transform)
-            self.viewer.add_geom(point)
+        point = rendering.make_circle(1)
+        point.set_color(.1, .8, .3)
+        self.point_transform = rendering.Transform()
+        point.add_attr(self.point_transform)
 
-            goal = rendering.make_circle(1)
-            goal.set_color(.9, .1, .1)
-            self.goal_transform = rendering.Transform()
-            goal.add_attr(self.goal_transform)
-            self.viewer.add_geom(goal)
-            fname = path.join(path.dirname(__file__), "assets/arrow.png")
-            self.img = rendering.Image(fname, 1., 1.)
-            self.img_trans = rendering.Transform()
-            self.img.add_attr(self.img_trans)
+        goal = rendering.make_circle(1)
+        goal.set_color(.9, .1, .1)
+        self.goal_transform = rendering.Transform()
+        goal.add_attr(self.goal_transform)
+        fname = path.join(path.dirname(__file__), "assets/arrow.png")
+        self.img = rendering.Image(fname, 1., 1.)
+        self.img_trans = rendering.Transform()
+        self.img.add_attr(self.img_trans)
 
-        self.viewer.add_onetime(self.img)
+        return [point, goal]
+    
+    def _do_transforms(self):
         self.point_transform.set_translation(self.state[0], self.state[1])
         self.goal_transform.set_translation(self.state[2], self.state[3])
         # if self.last_u:
@@ -171,6 +167,19 @@ class PointMass(gym.Env):
         self.img_trans.set_rotation(np.arctan2(self.last_u[1], self.last_u[0]))
         scale = np.linalg.norm(self.last_u) / self.max_torque * 2
         self.img_trans.set_scale(scale, scale)
+
+
+    def render(self, mode='human'):
+        from gym.envs.classic_control import rendering
+        if self.viewer is None:
+            self.viewer = rendering.Viewer(500,500)
+            self.viewer.set_bounds(-self.max_position, self.max_position, -self.max_position, self.max_position)
+            for geom in self._get_geoms():
+                self.viewer.add_geom(geom)
+
+        self.viewer.add_onetime(self.img)
+
+        self._do_transforms()
         # import time
         # time.sleep(self.dt)
 

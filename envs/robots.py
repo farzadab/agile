@@ -19,7 +19,8 @@ class Walker2D(WalkerBase):
     '''
     ee_names = foot_list = ["foot", "foot_left"]
     model_filename = "models/walker2d.xml"
-    pelvis_partname = 'link0_6'
+    # pelvis_partname = 'link0_6'
+    pelvis_partname = 'pelvis'
 
     def __init__(self, power_coeff=0.4):
         self.end_effector_names = self.foot_list
@@ -104,7 +105,8 @@ class Walker2D(WalkerBase):
 
 class WalkerV2(Walker2D):
     '''Walker2D with fixed thigh joint ranges'''
-    model_filename = 'models/walker_v2.xml'
+    # model_filename = 'models/walker_v2.xml'
+    model_filename = 'models/full_walker2d.xml'
 
     # def alive_bonus(self, z, pitch):
     #     return 1
@@ -140,7 +142,7 @@ class Walker2DPD(WalkerV2):
             dtype=np.float32
         )
         action = self.kp * (a - joint_pose[:, 0]) - self.kd * joint_pose[:, 1]
-        if self._debug or True:
+        if self._debug:
             self.plot.add_point(joint_pose[0, 1], self._istep)
             self.plot2.add_point(joint_pose[0, 0], self._istep)
             self.plot3.add_point(a[0], self._istep)

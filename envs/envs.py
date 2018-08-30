@@ -192,7 +192,7 @@ class Walker2DRefEnvDM(Walker2DRefEnv):
     Walker2DRef environment with the corrected rewards
     '''
     r_names = ['jpos', 'jvel', 'ee', 'pelvis_z', 'pelvis_v']
-    r_weights = dict(jpos=0.0 , jvel=0.0, ee=0.0 , pelvis_z=0.00, pelvis_v=1.0)
+    r_weights = dict(jpos=0.2 , jvel=0.2, ee=0.2 , pelvis_z=0.1, pelvis_v=0.3)
     r_scales  = dict(jpos=2   , jvel=0.1, ee=40/3, pelvis_z=10/3, pelvis_v=10)
     def __init__(self, store_fname=None, ref=None, **kwargs):
         if store_fname is None:
@@ -248,7 +248,7 @@ class WalkerProgress(Walker2DRefEnvDM):
     def get_reward(self, state, action):
         self.rewards = OrderedDict([
             ('progres', self.cur_motion_params()['pelvis_v']),
-            ('alive', 0.1),
+            ('alive', 1),
         ])
         return sum(self.rewards.values())
 
@@ -260,6 +260,54 @@ class FastWalker2DRefEnvDM(Walker2DRefEnvDM):
 class Walker2DPDRefEnvDM(Walker2DRefEnvDM):
     def __init__(self, robot=Walker2DPD()):
         super().__init__(robot=robot)
+
+
+class Walker2DPDETFall(Walker2DPDRefEnvDM):
+    et_fall_parts = ['torso', 'thigh', 'thigh_left']
+
+    def termination(self, state, action):
+        for part_name in self.et_fall_parts:  # TODO: Maybe calculating feet contacts could be done within the robot code
+            contact_ids = set((x[2], x[4]) for x in self.robot.parts[part_name].contact_list())
+            # print("CONTACT OF '%s' WITH %s" % (part_name, str(contact_ids)) )
+            if self.ground_ids & contact_ids:
+                return True
+        return False
+
+    def _step(self, action):
+        obs, rew, _, ext = super()._step(action)
+        return obs, rew, self.termination(obs, action), ext
+
+
+class Walker2DPDDistSq(Walker2DPDRefEnvDM):
+    r_weights = dict(jpos=0.4 , jvel=0.2, ee=0.1 , pelvis_z=0.2, pelvis_v=0.1)
+    
+    def _step(self, action):
+        obs, rew, _, _ = super()._step(action)
+        return obs, rew, False, {'rewards': self.rewards}
+
+    def get_reward(self, state, action):
+        targets = self.ref.ref_at_time(self.timer)
+        current = self.cur_motion_params()
+        self.rewards = OrderedDict([
+            (param,
+                self.r_weights[param] *
+                # np.exp(
+                    -1 * self.r_scales[param] * np.sum(np.square(
+                        np.subtract(targets[param], current[param])
+                    ))
+                # )
+            ) for param in self.r_names
+        ])
+        # print(self.rewards.values())
+        # if np.random.uniform(0,1) < 0.05:
+        # print('------------------')
+        # print(current['jpos'], targets['jpos'], self.rewards['jpos'])
+        # print(current['jvel'], targets['jvel'], self.rewards['jvel'])
+        # print(current['ee'], targets['ee'], self.rewards['ee'])
+        # # print(current['pelvis'], targets['pelvis'], self.rewards['pelvis'])
+        # print(current['pelvis_v'], targets['pelvis_v'], self.rewards['pelvis_v'])
+        # print(current['pelvis_z'], targets['pelvis_z'], self.rewards['pelvis_z'])
+        return sum([self.rewards[param] for param in self.r_names]) / 10
 
 
 class WalkerRefAssistPDEnvDM(Walker2DRefEnvDM):
@@ -374,7 +422,7 @@ def play_path(env, record=False, ref=None):
         env.ref = ref
     env.render('human')
     # env.play_path(store_fname='' if record else None)
-    env.play_path(store_fname='walker_v2.json' if record else None)
+    env.play_path(store_fname='walker_v3.json' if record else None)
 
 
 if __name__ == '__main__':

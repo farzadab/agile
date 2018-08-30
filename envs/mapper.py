@@ -9,7 +9,9 @@ from algorithms.senv import PointMass, PointMassV2, NStepPointMass, CircularPoin
                             PhaseRN1_NC, PhaseRN2, PhaseRN2_NC
 
 from envs.pmfollow import PMFollow, PMFollow1, PMFollow4, PMFollow8, \
-                          PMFollowIceMid, PMFollowIceMid1, PMFollowIceMid4, PMFollowIceMid8
+                          PMFollowG1, PMFollowG2, PMFollowG4, PMFollowG8, \
+                          PMFollowIceMid, PMFollowIceMid1, PMFollowIceMid4, PMFollowIceMid8, \
+                          PMFollowGIceMid1, PMFollowGIceMid2, PMFollowGIceMid4, PMFollowGIceMid8
 
 
 class MultiStepEnv(ObjectWrapper):
@@ -55,10 +57,18 @@ _ENV_MAP = dict(
     PMFollow2=PMFollow,
     PMFollow4=PMFollow4,
     PMFollow8=PMFollow8,
+    PMFollowG1=PMFollowG1,
+    PMFollowG2=PMFollowG2,
+    PMFollowG4=PMFollowG4,
+    PMFollowG8=PMFollowG8,
     PMFollowIceMid1=PMFollowIceMid1,
     PMFollowIceMid2=PMFollowIceMid,
     PMFollowIceMid4=PMFollowIceMid4,
     PMFollowIceMid8=PMFollowIceMid8,
+    PMFollowGIceMid1=PMFollowGIceMid1,
+    PMFollowGIceMid2=PMFollowGIceMid2,
+    PMFollowGIceMid4=PMFollowGIceMid4,
+    PMFollowGIceMid8=PMFollowGIceMid8,
 )
 
 
