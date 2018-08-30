@@ -10,6 +10,7 @@
   - `⚫⚫⚫` misc
   - `>` description or explanation about the run
   - `⇒⇒⇒` overal description
+  - `⛭⛭⛭` observation
 
 # Report
 
@@ -95,7 +96,7 @@ Jun15_15-27-31: randomize_goal and velocity reward work perfectly! it took aroun
 
 +++ added save/load functionality
 
-Jun15_16-45-08: randomize_goal and distance squared works too. Not sure how well, need a validation criteria
+Jun15_16-45-08: randomize_goal and distance uared works too. Not sure how well, need a validation criteria
 
 
 ## 18/06/2018 - Commit 62ecde1ebda63e652fe86cad27a9bb814d244391
@@ -679,11 +680,19 @@ Zhaoming  -----  use PD residual
 
 (  ) Aug07_10-41-39: ref assisted walker
 (  ) Aug07_13-15-28: ref assisted walker with higher torque limit
-(  ) Aug07_15-48-24: residual with only forward velocity reward (and higher torque limit)
+(✔ ) Aug07_15-48-24: residual with only forward velocity reward (and higher torque limit)
 > works great! the speed is matched really closely: less than 1m difference after 20m of walking
-(  ) Aug08_11-10-54: same but without the residual
-(  ) Aug08_14-05-44: same but only velocity reward (not match velocity, but move forward)
-(  ) Aug09_11-12-03: same + alive bonus (0.1)
+(✖ ) Aug08_11-10-54: same but without the residual
+(✖ ) Aug08_14-05-44: same but only velocity reward (not match velocity, but move forward)
+> just dies really fast
+(✖ ) Aug09_11-12-03: same + alive bonus (0.1)
+> same, just dies really fast
+(✖ ) Aug09_15-25-30: same + alive bonus (0.5)
+(✖ ) Aug09_15-26-18: same + alive bonus (1.0)
+> learns to sometimes stay still and dies if it can't: but why?? what was the difference between this run and the second one above this?
+
+(  ) Aug09_15-32-01: test walker distsq reward without ET
+> interesting. It learns to stand around, but it **can crawl when it's on its knees!**
 
 
 
@@ -692,16 +701,72 @@ Zhaoming  -----  use PD residual
 (1 ) Aug07_15-05-55: PMFollow(2) ++ distexp ++ smaller net (2 layers of 10) ++ larger batch size (4000)
 > best performance here
 --> mapper name changed from PMFollow1 to PMFollow2
-(4 ) Aug07_16-49-32: PMFollow(1) ++ distexp ++ smaller net (2 layers of 10) ++ larger batch size
-(2 ) Aug07_16-50-42: PMFollow(4) ++ distexp ++ smaller net (2 layers of 10) ++ larger batch size
+(4 ) Aug07_16-49-32: PMFollow(1) ++ distexp ++ smaller net ++ larger batch size
+(2 ) Aug07_16-50-42: PMFollow(4) ++ distexp ++ smaller net ++ larger batch size
 
-(  ) Aug08_10-53-57: PMFollow(2) ++ distexp ++ smaller net (2 layers of 10) ++ larger batch size ++ lambda=0.5
-(  ) Aug08_10-54-54: PMFollow(2) ++ distexp ++ smaller net (2 layers of 10) ++ larger batch size ++ lambda=0.5 ++ gamma=0.7
-(  ) Aug08_12-52-55: PMFollow(2) ++ distexp ++ smaller net (2 layers of 10) ++ larger batch size ++ lambda=0.8
+(  ) Aug08_10-53-57: PMFollow(2) ++ distexp ++ smaller net ++ larger batch size ++ lambda=0.5
+(  ) Aug08_10-54-54: PMFollow(2) ++ distexp ++ smaller net ++ larger batch size ++ lambda=0.5 ++ gamma=0.7
+(  ) Aug08_12-52-55: PMFollow(2) ++ distexp ++ smaller net ++ larger batch size ++ lambda=0.8
 --> critic lr: x200
-(  ) Aug08_13-56-35: PMFollow(2) ++ distexp ++ smaller net (2 layers of 10) ++ larger batch size ++ lambda=0.8 ++ no PEB
+(  ) Aug08_13-56-35: PMFollow(2) ++ distexp ++ smaller net ++ larger batch size ++ lambda=0.8 ++ no PEB
 > pretty much shows that **PEB is necessary!** (but except for the critic lr change)
-(  ) Aug08_14-32-57: PMFollow(2) ++ distexp ++ smaller net (2 layers of 10) ++ larger batch size ++ lambda=0.98 (x200 critic lr)
-(  ) Aug08_14-37-19: PMFollow(2) ++ distexp ++ smaller net (2 layers of 10) ++ larger batch size ++ lambda=0.98 (x20  critic lr)
-(  ) Aug09_11-04-53: PMFollow(2) ++ distexp ++ smaller net (2 layers of 10) ++ larger batch size ++ lambda=0.98 (x5   critic lr)
-(  ) Aug09_11-17-19: PMFollow(2) ++ distexp ++ smaller net (2 layers of 10) ++ larger batch size ++ lambda=0.98 (x1   critic lr)
+(  ) Aug08_14-32-57: PMFollow(2) ++ distexp ++ smaller net ++ larger batch size ++ lambda=0.98 (x200 critic lr)
+(  ) Aug08_14-37-19: PMFollow(2) ++ distexp ++ smaller net ++ larger batch size ++ lambda=0.98 (x20  critic lr)
+(2 ) Aug09_11-04-53: PMFollow(2) ++ distexp ++ smaller net ++ larger batch size ++ lambda=0.98 (x5   critic lr)
+(  ) Aug09_11-17-19: PMFollow(2) ++ distexp ++ smaller net ++ larger batch size ++ lambda=0.98 (x1   critic lr)
+> not good .. but why?
+(  ) Aug09_12-21-40: PMFollow(2) ++ distexp ++ smaller net ++ larger batch size ++ lambda=0.98 (x3   critic lr)
+
+
+## after SIGGRAPH
+
+(  ) Aug17_09-46-48: larger net ++ λ=0.95
+(  ) Aug17_10-17-53: same but with Walker2DPDDistSq (continuing Aug09_15-32-01 with modified reward terms)
+
++++ shoot! I was supposed to change γ to 0.95, λ was already at 0.95
+
+
+⇒⇒⇒ what if the early termination is to blame: it dies too quickly now  -> ETFall
+(  ) Aug23_08-54-23: test Walker2DPDETFall
+
++++ the legs never contact the ground, it's better to use the thigh instead
++++ the reward term was messed up: just velocity reward
+--> r_weights = dict(jpos=0.2 , jvel=0.2, ee=0.2 , pelvis_z=0.1, pelvis_v=0.3)
+
+(  ) Aug23_18-11-42: Walker2DPDETFall-v0 with fixed rewards and ET with thigh instead of legs
+
+(4 ) Aug27_11-43-39: PMFollowIceMid1
+(2 ) Aug27_11-43-56: PMFollowIceMid2
+(2 ) Aug27_11-43-58: PMFollowIceMid4
+(1 ) Aug27_11-44-00: PMFollowIceMid8
+
+--> make ice patch bigger: 1/4 to 1/2  ++  less control in ice-patch 0.1 -> 0.001 (might need to think more about where it starts from)
+
+(1 ) Aug27_13-28-45: PMFollowIceMid1 with some changes
+(1.5) Aug27_13-29-04: PMFollowIceMid2 with some changes
+(3 ) Aug27_13-29-27: PMFollowIceMid4 with some changes
+(3 ) Aug27_13-30-46: PMFollowIceMid8 with some changes
+
++++ maybe the exp would learn to ignore parts of the (bad/impossible) motion?
+
+(1 ) Aug27_17-10-09: PMFollowIceMid1 with distexp
+(1 ) Aug27_17-10-28: PMFollowIceMid2 with distexp
+(3 ) Aug27_17-11-20: PMFollowIceMid4 with distexp
+(4 ) Aug27_17-11-42: PMFollowIceMid8 with distexp
+> the 1 and 2 lookaheads perform better than others. 1 is the best from the start but 2 catches up in the end
+
++++ the lookaheads are too far apart from the current goal: need the current goal in state
+
+(  ) Aug27_17-55-24: PMFollowGIceMid1
+(  ) Aug27_17-55-49: PMFollowGIceMid2
+(  ) Aug27_17-55-51: PMFollowGIceMid4
+(  ) Aug27_17-55-53: PMFollowGIceMid8
+> wrong env: it wasn't an IceMid env
+> but still, the one with 2 lookaheads performs the best
+
+⛭⛭⛭ the value function of the 8 lookahead one takes a long time to improve
+
+(  ) Aug29_11-16-36: fixed PMFollowGIceMid1
+(  ) Aug29_11-16-44: fixed PMFollowGIceMid2
+(  ) Aug29_11-16-53: fixed PMFollowGIceMid4
+(  ) Aug29_11-17-07: fixed PMFollowGIceMid8

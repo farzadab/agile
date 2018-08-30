@@ -10,6 +10,7 @@ def get_args():
         desc='',
 
         replay_path='',  # if specified, will not train and only replays the learned policy
+        replay_noise=True,
         store=True,
         render=False,
         load_path='',
@@ -146,7 +147,9 @@ def replay(args, env, ppo):
         # print('\npolicy:\n', json.dumps(dict([(k,v.tolist()) for k,v in ppo.actor.net.state_dict().items()]), sort_keys=True, indent=4))
         # print('\nvalue func:\n', json.dumps(dict([(k,v.tolist()) for k,v in ppo.critic.state_dict().items()]), sort_keys=True, indent=2))
 
-        # ppo.actor.log_std[0] = -20  # simple hack to decrease the exploration level
+        if not args.replay_noise:
+            # simple hack to decrease the noise/exploration level
+            ppo.actor.log_std[0] = -20
 
         mem = ReplayMemory(gamma=args.gamma, gae_lambda=0)
         ppo.sample_episode(args.batch_size, mem)

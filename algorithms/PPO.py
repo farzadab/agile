@@ -10,6 +10,7 @@ from nets import make_net
 from dynamics import Data
 from generators import inf_range
 from algorithms.normalization import Stats
+from algorithms.plot import LinePlot
 
 
 class PPO(object):
@@ -192,6 +193,10 @@ class PPO(object):
         total_rew = 0
         acts = []
 
+        plot = None
+        # if self.render:
+        #     plot = LinePlot()
+
         done = True  # force reset
         # first = True
         rews = []
@@ -218,6 +223,8 @@ class PPO(object):
             # TODO: use a callback here instead
             if self.render:# and i_step % 100 == 0:
                 self.env.render(mode='human')
+                if plot:
+                    plot.add_point(self._value_function(state), i_step, redraw=((i_step%10) == 0))
 
             explore = (np.random.rand() < self.explore_ratio) or (i_step == 0)
             act = self.actor.get_action(th.FloatTensor(state), explore=explore).detach().numpy()
@@ -241,6 +248,20 @@ class PPO(object):
 
             if done:
                 termination_types[termination] += 1
+        
+        if self.render:
+            mem.calculate_advantages(self._value_function)
+            plot = LinePlot(num_scatters=3)
+            for i in range(mem.size()):
+                plot.add_point(mem['vpred'][i], i, line_num=0, redraw=False)
+                plot.add_point(mem['creward'][i], i, line_num=1, redraw=False)
+            for i in mem.episode_starts[1:]:
+                plot.add_point(-2, i-1, line_num=2, redraw=False)
+                plot.add_point(+2, i,   line_num=2, redraw=False)
+                plot.add_point(-2, i+1, line_num=2, redraw=False)
+            import matplotlib.pyplot as plt
+            plot._redraw()
+            plt.show(block=True)
         
         if self.writer:
             self.writer.add_scalar('Train/AvgReward', float(total_rew) / (i_step+1))
@@ -420,13 +441,13 @@ class ReplayMemory(Data):
         for start, end in zip(self.episode_starts, episode_ends):
             # if self.size() - self.episode_start_index == 0:
             #     return
-            crew = 0
             adv = 0
             
             # --- Experimental feature: partial-episode bootstraping for time-unlimited tasks ---
             #  The name was suggested here https://arxiv.org/pdf/1712.00378.pdf
             # but the idea has been around for longer
             vpred = vfunc(self['nstate'][-1]) if self['timelimit'][-1] else 0
+            crew = vpred
 
             # print(self.episode_start_index, self.size())
             episode_return = 0

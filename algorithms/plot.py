@@ -50,21 +50,26 @@ class Plot(object):
 
 
 class LinePlot(Plot):
-    def __init__(self, xlim=[-1,1], ylim=[-1,1], *args, **kwargs):
+    COLORS = ['r', 'b', 'g', 'c', 'k', 'w', 'y']
+    def __init__(self, xlim=[-1,1], ylim=[-1,1], num_scatters=1, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.subplot = self.parent._get_subplot()
-        self.sc, = self.subplot.plot([], [], 'r-')
+        self.sc = [self.subplot.plot([], [], self.COLORS[i] + '-')[0] for i in range(num_scatters)]
         self.subplot.set_xlim(*xlim)
         self.subplot.set_ylim(*ylim)
+        self.xlim = xlim
+        self.ylim = ylim
         self._redraw()
 
-    def add_point(self, y, x, redraw=True):
-        xs = np.append(self.sc.get_xdata(), [x])
-        ys = np.append(self.sc.get_ydata(), [y])
-        self.sc.set_xdata(xs)
-        self.sc.set_ydata(ys)
-        self.subplot.set_xlim(xs.min(), xs.max())
-        self.subplot.set_ylim(ys.min(), ys.max())
+    def add_point(self, y, x, line_num=0, redraw=True):
+        xs = np.append(self.sc[line_num].get_xdata(), [x])
+        ys = np.append(self.sc[line_num].get_ydata(), [y])
+        self.sc[line_num].set_xdata(xs)
+        self.sc[line_num].set_ydata(ys)
+        self.xlim = [min(self.xlim[0], x), max(self.xlim[1], x)]
+        self.ylim = [min(self.ylim[0], y), max(self.ylim[1], y)]
+        self.subplot.set_xlim(*self.xlim)
+        self.subplot.set_ylim(*self.ylim)
         if redraw:
             self._redraw()
 
