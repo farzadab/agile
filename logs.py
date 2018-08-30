@@ -37,7 +37,7 @@ class LogMaster(object):
                     'red'
                 ))
                 args.desc = input()
-            writer = tensorboardX.SummaryWriter()
+            writer = tensorboardX.SummaryWriter(getattr(args, 'log_dir', None))
         else:
             writer = ConsoleWriter()
 

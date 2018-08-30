@@ -11,6 +11,8 @@ def get_args():
 
         replay_path='',  # if specified, will not train and only replays the learned policy
         replay_noise=True,
+        log_dir=None,
+
         store=True,
         render=False,
         load_path='',
