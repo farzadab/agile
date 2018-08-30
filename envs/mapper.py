@@ -10,6 +10,7 @@ from algorithms.senv import PointMass, PointMassV2, NStepPointMass, CircularPoin
 
 from envs.pmfollow import PMFollow, PMFollow1, PMFollow4, PMFollow8, \
                           PMFollowG1, PMFollowG2, PMFollowG4, PMFollowG8, \
+                          PMFollowGV1, PMFollowGV2, PMFollowGV4, PMFollowGV8, \
                           PMFollowIceMid, PMFollowIceMid1, PMFollowIceMid4, PMFollowIceMid8, \
                           PMFollowGIceMid1, PMFollowGIceMid2, PMFollowGIceMid4, PMFollowGIceMid8
 
@@ -61,6 +62,10 @@ _ENV_MAP = dict(
     PMFollowG2=PMFollowG2,
     PMFollowG4=PMFollowG4,
     PMFollowG8=PMFollowG8,
+    PMFollowGV1=PMFollowGV1,
+    PMFollowGV2=PMFollowGV2,
+    PMFollowGV4=PMFollowGV4,
+    PMFollowGV8=PMFollowGV8,
     PMFollowIceMid1=PMFollowIceMid1,
     PMFollowIceMid2=PMFollowIceMid,
     PMFollowIceMid4=PMFollowIceMid4,

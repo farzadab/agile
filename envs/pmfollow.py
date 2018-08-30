@@ -17,16 +17,17 @@ from algorithms.senv import PointMass
 class PMFollow(PointMass):
     max_speed = 4.
     # TODO: use arg to see if phase should be shown or act
-    def __init__(self, path_gen=None, nb_lookaheads=2, goal_in_state=False, start_at_goal=True, *args, **kwargs):
+    def __init__(self, path_gen=None, nb_lookaheads=2, goal_in_state=False, include_goal_vel=False, start_at_goal=True, *args, **kwargs):
         self.parent_indices = [0,1,4,5]
         self.goal_in_state = goal_in_state
+        self.include_goal_vel = include_goal_vel
         super().__init__(reset=False, *args, **kwargs)
         # self.phase_start = 0
         # self.phase_end   = 1
         self.phase = 0
         self.path_gen = path_gen if path_gen else RPGen()
         self.nb_lookaheads = nb_lookaheads
-        high_la = self.max_position * np.ones((nb_lookaheads + goal_in_state) * 2)
+        high_la = self.max_position * np.ones((nb_lookaheads + goal_in_state) * (2 + 2 * self.include_goal_vel))
         high = np.concatenate([self.observation_space.high[self.parent_indices], high_la])
         low  = np.concatenate([self.observation_space.low[self.parent_indices],  -high_la])
         self.observation_space = gym.spaces.Box(low, high, dtype=np.float32)
@@ -66,7 +67,12 @@ class PMFollow(PointMass):
                 self.max_position * np.concatenate([
                     self.path.at_point(self.phase + i * self.dt)
                     for i in range(1-self.goal_in_state, self.nb_lookaheads+1)
-                ])
+                ]),
+                [] if not self.include_goal_vel else
+                    self.max_position / self.path.duration() * np.concatenate([
+                        self.path.grad_at_point(self.phase + i * self.dt)
+                        for i in range(1-self.goal_in_state, self.nb_lookaheads+1)
+                    ])
             ])
     
     def _get_geoms(self):
@@ -120,6 +126,23 @@ class PMFollowG4(PMFollow):
 class PMFollowG8(PMFollow):
     def __init__(self, *args, **kwargs):
         super().__init__(nb_lookaheads=8, goal_in_state=True, *args, **kwargs)
+
+
+class PMFollowGV1(PMFollow):
+    def __init__(self, *args, **kwargs):
+        super().__init__(nb_lookaheads=1, goal_in_state=True, include_goal_vel=True, *args, **kwargs)
+
+class PMFollowGV2(PMFollow):
+    def __init__(self, *args, **kwargs):
+        super().__init__(nb_lookaheads=2, goal_in_state=True, include_goal_vel=True, *args, **kwargs)
+
+class PMFollowGV4(PMFollow):
+    def __init__(self, *args, **kwargs):
+        super().__init__(nb_lookaheads=4, goal_in_state=True, include_goal_vel=True, *args, **kwargs)
+
+class PMFollowGV8(PMFollow):
+    def __init__(self, *args, **kwargs):
+        super().__init__(nb_lookaheads=8, goal_in_state=True, include_goal_vel=True, *args, **kwargs)
 
 
 class PGen(object):

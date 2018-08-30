@@ -59,8 +59,13 @@ class DiscretePath(PhasePath):
                 bc_type='periodic' if closed else 'not-a-knot',
                 extrapolate='periodic',
             )
+            self.spline_grad = self.spline.derivative()
     def duration(self):
         return float(self.num_segments * self.seconds_per_point)
+    def grad_at_point(self, phase):
+        if self.spline:
+            return self.spline_grad(phase)
+        raise NotImplementedError
     def at_point(self, phase):
         if self.spline:
             return self.spline(phase)
