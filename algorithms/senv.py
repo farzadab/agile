@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, print_function
+from builtins import (bytes, str, open, super, range,
+                      zip, round, input, int, pow, object)
 
 from gym.utils import seeding
 import numpy as np
@@ -221,8 +225,8 @@ class PointMass(gym.Env):
         self.splot.update(points, v)
         self.qplot.update(points, d)
         
-        if i_iter is not None and self.writer is not None:
-            self.writer.add_image('Vis/Nets', self.plot.get_image(), i_iter)
+        # if i_iter is not None and self.writer is not None:
+        #     self.writer.add_image('Vis/Nets', self.plot.get_image(), i_iter)
 
     def close(self):
         if self.viewer:

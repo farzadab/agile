@@ -1,8 +1,13 @@
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, print_function
+from builtins import (bytes, str, open, super, range,
+                      zip, round, input, int, pow, object)
 import os
+import errno
 import torch as th
 import numpy as np
 import random
-import tensorboardX
+# import tensorboardX
 import copy
 
 from algorithms.models import ActorNet
@@ -10,7 +15,7 @@ from nets import make_net
 from dynamics import Data
 from generators import inf_range
 from algorithms.normalization import Stats
-from algorithms.plot import LinePlot
+# from algorithms.plot import LinePlot
 
 
 class PPO(object):
@@ -249,19 +254,19 @@ class PPO(object):
             if done:
                 termination_types[termination] += 1
         
-        if self.render:
-            mem.calculate_advantages(self._value_function)
-            plot = LinePlot(num_scatters=3)
-            for i in range(mem.size()):
-                plot.add_point(mem['vpred'][i], i, line_num=0, redraw=False)
-                plot.add_point(mem['creward'][i], i, line_num=1, redraw=False)
-            for i in mem.episode_starts[1:]:
-                plot.add_point(-2, i-1, line_num=2, redraw=False)
-                plot.add_point(+2, i,   line_num=2, redraw=False)
-                plot.add_point(-2, i+1, line_num=2, redraw=False)
-            import matplotlib.pyplot as plt
-            plot._redraw()
-            plt.show(block=True)
+        # if self.render:
+        #     mem.calculate_advantages(self._value_function)
+        #     plot = LinePlot(num_scatters=3)
+        #     for i in range(mem.size()):
+        #         plot.add_point(mem['vpred'][i], i, line_num=0, redraw=False)
+        #         plot.add_point(mem['creward'][i], i, line_num=1, redraw=False)
+        #     for i in mem.episode_starts[1:]:
+        #         plot.add_point(-2, i-1, line_num=2, redraw=False)
+        #         plot.add_point(+2, i,   line_num=2, redraw=False)
+        #         plot.add_point(-2, i+1, line_num=2, redraw=False)
+        #     import matplotlib.pyplot as plt
+        #     plot._redraw()
+        #     plt.show(block=True)
         
         if self.writer:
             self.writer.add_scalar('Train/AvgReward', float(total_rew) / (i_step+1))
@@ -357,7 +362,7 @@ class PPO(object):
         if path is None:
             return
         name = 'last' if index is None else str(index)
-        os.makedirs(path, exist_ok=True)
+        mkdir_p(path)
         th.save(self, os.path.join(path, '%s-ppo.pt' % name))
     
     @staticmethod
@@ -413,7 +418,7 @@ class PPO(object):
 
 
 class ReplayMemory(Data):
-    bool_tensors = ['exploratory', 'timelimit']
+    bool_tensors = ['done', 'exploratory', 'timelimit']
     def __init__(self, gamma, gae_lambda):
         super().__init__(['state', 'action', 'reward', 'nstate', 'vpred', 'td', 'adv', 'creward', 'vtarg'] + self.bool_tensors)
         self.gamma = gamma
@@ -421,11 +426,13 @@ class ReplayMemory(Data):
         self.episode_starts = []
         self.tensored = False
 
-    def record(self, s, a, r, ns, explore=False, timelimit=False):
-        super().add_point(s, a, r, ns, 0, 0, 0, 0, 0, explore, timelimit)
+    def record(self, s, a, r, ns, done=False, explore=False, timelimit=False):
+        super().add_point(s, a, r, ns, 0, 0, 0, 0, 0, done, explore, timelimit)
     
     def record_new_episode(self):
         self.episode_starts.append(self.size())
+        if self.size() > 0:
+            self['done'][-1] = True
 
     def calculate_advantages(self, vfunc):
         '''
@@ -446,7 +453,8 @@ class ReplayMemory(Data):
             # --- Experimental feature: partial-episode bootstraping for time-unlimited tasks ---
             #  The name was suggested here https://arxiv.org/pdf/1712.00378.pdf
             # but the idea has been around for longer
-            vpred = vfunc(self['nstate'][-1]) if self['timelimit'][-1] else 0
+            # vpred = vfunc(self['nstate'][-1]) if self['timelimit'][-1] else 0
+            vpred = 0
             crew = vpred
 
             # print(self.episode_start_index, self.size())
@@ -617,3 +625,12 @@ class MultiOptimScheduler(object):
                 from a call to :meth:`state_dict`.
         """
         self.__dict__.update(state_dict)
+
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:  # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise

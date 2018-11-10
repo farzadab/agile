@@ -24,7 +24,7 @@ class Walker2D(WalkerBase):
 
     def __init__(self, power_coeff=0.4):
         self.end_effector_names = self.foot_list
-        super().__init__(
+        super(Walker2D, self).__init__(
             os.path.join(CUR_DIR, self.model_filename),
             "torso",
             action_dim=6, obs_dim=22, power=power_coeff
@@ -34,7 +34,7 @@ class Walker2D(WalkerBase):
         return +1 if z > 0.8 and abs(pitch) < 1.0 else -1
 
     def robot_specific_reset(self, bullet_client):
-        super().robot_specific_reset(bullet_client)
+        super(Walker2D, self).robot_specific_reset(bullet_client)
         for n in ["foot_joint", "foot_left_joint"]:
             self.jdict[n].power_coef = 30.0
 
@@ -48,7 +48,7 @@ class Walker2D(WalkerBase):
         return self.pelvis.current_position()
 
     def reset(self, bullet_client):
-        super().reset(bullet_client)
+        super(Walker2D, self).reset(bullet_client)
         self.ordered_part_names = sorted([k for k in self.parts if k[:4] != 'link' and k != 'floor'])
         self.ordered_parts = [self.parts[name] for name in self.ordered_part_names]
         self.pelvis = self.parts[self.pelvis_partname]
@@ -114,10 +114,10 @@ class WalkerV2(Walker2D):
 
 class Walker2DNoMass(WalkerV2):
     def __init__(self):
-        super().__init__()
+        super(Walker2DNoMass, self).__init__()
 
     def reset(self, bullet_client):
-        super().reset(bullet_client)
+        super(Walker2DNoMass, self).reset(bullet_client)
         # for name, part in self.parts.items():
         #     print(name, bullet_client.getDynamicsInfo(part.bodies[part.bodyIndex], part.bodyPartIndex)[0])
         for part in self.parts.values():
@@ -128,7 +128,7 @@ class Walker2DPD(WalkerV2):
     kp = 2
     kd = 2
     def __init__(self):
-        super().__init__(power_coeff=1)
+        super(Walker2DPD, self).__init__(power_coeff=1)
         # self._debug = True
         if self._debug:
             self.plot = LinePlot(xlim=[0, 1000], ylim=[-10, 10])
@@ -146,7 +146,7 @@ class Walker2DPD(WalkerV2):
             self.plot.add_point(joint_pose[0, 1], self._istep)
             self.plot2.add_point(joint_pose[0, 0], self._istep)
             self.plot3.add_point(a[0], self._istep)
-        super().apply_action(action)
+        super(Walker2DPD, self).apply_action(action)
 
 
 class Walker2DPDUnscaled(WalkerV2):

@@ -2,16 +2,15 @@
 Just a copy of `robot_locomotors.py` from pybullet, only required because of importing issues
 (origin: https://github.com/bulletphysics/bullet3/blob/master/examples/pybullet/gym/pybullet_envs/robot_locomotors.py)
 '''
-from pybullet_envs.robot_bases import XmlBasedRobot, MJCFBasedRobot, URDFBasedRobot
 import numpy as np
 import pybullet 
 import os
 import pybullet_data
-from .robot_bases import BodyPart
+from .robot_bases import BodyPart, XmlBasedRobot, MJCFBasedRobot, URDFBasedRobot
 
 class WalkerBase(MJCFBasedRobot):
 	def __init__(self,  fn, robot_name, action_dim, obs_dim, power):
-		MJCFBasedRobot.__init__(self, fn, robot_name, action_dim, obs_dim)
+		super(WalkerBase, self).__init__(fn, robot_name, action_dim, obs_dim)
 		self.power = power
 		self.camera_x = 0
 		self.start_pos_x, self.start_pos_y, self.start_pos_z = 0, 0, 0

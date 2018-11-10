@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import torch as th
 import numpy as np
 import collections
@@ -74,7 +75,7 @@ class NormalizedEnv(ObjectWrapper):
         @param normalize_obs: whether or not to normalize the observations
         @param gamma: the discount factor (γ), used to normalized the rewards. Default: no normalization
         '''
-        super().__init__(env)
+        super(NormalizedEnv, self).__init__(env)
         self.gamma = gamma
         self.norm_stt = Stats(
             input_size=env.observation_space.shape[0],

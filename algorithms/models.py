@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+from __future__ import print_function
 import torch as th
 import torch.nn as nn
 import copy
@@ -10,6 +12,10 @@ class ActorNet(object):
     def __init__(self, env, hidden_layers=[], log_std_noise=-2): #, *args, **kwargs):
         self.net = make_net(
             [env.observation_space.shape[0]] + hidden_layers + [env.action_space.shape[0]],
+            [nn.ReLU() for _ in hidden_layers]
+        )
+        self.critic_net = make_net(
+            [env.observation_space.shape[0]] + hidden_layers + [1],
             [nn.ReLU() for _ in hidden_layers]
         )
         # import ipdb

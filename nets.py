@@ -5,15 +5,20 @@ import datetime
 
 
 class NNModel(object):
-    def __init__(self, net, optimizer=None, criterion=None, batch_size=1024, writer=None):
+    def __init__(
+            self, net,
+            optimizer=None, lr=0.0003, weight_decay=0.0003,
+            criterion=None, batch_size=1024,
+            writer=None, log_name='net'):
         # datetime.datetime.now().strftime('%Y/%m/%d-%X') + '_net.log'
         self.batch_size = batch_size
         self.writer = writer
+        self.log_label = 'TrainLoss/' + log_name
         self.net = net.double()
         self.i_iteration = 0
         if optimizer is None:
             # self.optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9, weight_decay=0.1)
-            self.optimizer = optim.Adam(net.parameters(), lr=0.0003, weight_decay=0.0003)
+            self.optimizer = optim.Adam(net.parameters(), lr=lr, weight_decay=weight_decay)
         if criterion is None:
             self.criterion = nn.MSELoss()
     
@@ -32,7 +37,7 @@ class NNModel(object):
         
         # write summary to PyTorch-Tensorboard
         if self.writer:
-            self.writer.add_scalar('Train/Loss', loss, self.i_iteration)
+            self.writer.add_scalar(self.log_label, loss, self.i_iteration)
             
         return loss
 

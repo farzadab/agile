@@ -1,4 +1,6 @@
-bokeh  # plotting
+bokeh  # plotting | TODO: remove
+matplotlib
+gym
 jinja2
 pybullet
 numpy
@@ -47,3 +49,37 @@ cloudpickle
 tensorflow>=1.4.0
 click
 opencv-python
+
+
+### just for SAC. should be removed later
+
+python-dateutil
+mako
+ipywidgets
+numba
+flask
+pygame
+h5py
+torchvision
+pandas
+Pillow
+atari-py
+boto3
+PyOpenGL
+nose2
+pyzmq
+msgpack-python
+line_profiler
+Cython
+redis
+keras
+awscli
+jupyter
+chainer
+numpy-stl
+nibabel
+pylru
+hyperopt
+polling
+gtimer
+pysandbox

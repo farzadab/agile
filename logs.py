@@ -1,8 +1,14 @@
-import tensorboardX
+from __future__ import absolute_import, division, print_function
+from builtins import (bytes, str, open, super, range,
+                      zip, round, input, int, pow, object)
+
+# import tensorboardX
 import numpy as np
 import logging
 import pygit2
 import termcolor
+import time
+import uuid
 import os
 
 from jsonfix import dump as json_dump
@@ -12,7 +18,9 @@ logger = logging.getLogger('mine')
 logger.setLevel(logging.DEBUG)
 
 # create console handler and set level to debug
-ch = logging.StreamHandler()
+DIRNAME = os.path.join(os.path.dirname(__file__), 'logs')
+LOG_FILENAME = '%s__%s.log' % (time.strftime("%Y-%m-%d_%H-%M-%S"), str(uuid.uuid4())[0:6])
+ch = logging.FileHandler(os.path.join(DIRNAME, LOG_FILENAME))
 ch.setLevel(logging.DEBUG)
 
 # create formatter
@@ -37,7 +45,8 @@ class LogMaster(object):
                     'red'
                 ))
                 args.desc = input()
-            writer = tensorboardX.SummaryWriter(comment=getattr(args, 'logdir_comment', None))
+            # writer = tensorboardX.SummaryWriter(comment=getattr(args, 'logdir_comment', ''))
+            writer = ConsoleWriter()
         else:
             writer = ConsoleWriter()
 

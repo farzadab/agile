@@ -8,7 +8,7 @@ os.sys.path.insert(0,parentdir)
 import pybullet_data
 
 
-class XmlBasedRobot:
+class XmlBasedRobot(object):
     """
     Base class for mujoco .xml based agents.
     """
@@ -105,7 +105,7 @@ class MJCFBasedRobot(XmlBasedRobot):
     """
 
     def __init__(self,  model_xml, robot_name, action_dim, obs_dim, self_collision=True):
-        XmlBasedRobot.__init__(self, robot_name, action_dim, obs_dim, self_collision)
+        super(MJCFBasedRobot, self).__init__(robot_name, action_dim, obs_dim, self_collision)
         self.model_xml = model_xml
         self.doneLoading=0
     def reset(self, bullet_client):
@@ -137,7 +137,7 @@ class URDFBasedRobot(XmlBasedRobot):
     """
 
     def __init__(self, model_urdf, robot_name, action_dim, obs_dim, basePosition=[0, 0, 0], baseOrientation=[0, 0, 0, 1], fixed_base=False, self_collision=False):
-        XmlBasedRobot.__init__(self, robot_name, action_dim, obs_dim, self_collision)
+        super(URDFBasedRobot, self).__init__(robot_name, action_dim, obs_dim, self_collision)
 
         self.model_urdf = model_urdf
         self.basePosition = basePosition

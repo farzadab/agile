@@ -1,3 +1,13 @@
+baselines
+cassie
+sac
+sandbox
+test_*.py
+sim_policy.py
+trpo_training_hopper.py
+rollout.py
+
+
 .old/
 
 .bens_envs/

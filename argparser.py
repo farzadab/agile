@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 'argparse'
 import argparse
 import enum
@@ -69,6 +70,7 @@ _DEFAULT_ARGS = {
         'help': 'Description of what the experiment is trying to accomplish',
     },
     'logdir_comment': {
+        'default': '',
         'help': 'A commment that is appended to the logging directory address',
     },
     'timesteps': {
